@@ -1,0 +1,867 @@
+@extends('layouts.app')
+
+@section('content')
+    {{-- ================================================================= --}}
+    {{-- STYLE KHUSUS NOTA (PRINT) --}}
+    {{-- ================================================================= --}}
+    <style>
+        /* Sembunyikan tampilan print saat mode web biasa */
+        #receipt-area { display: none; }
+
+        @media print {
+            /* 1. RESET GLOBAL: Hapus elemen web, Tampilkan struk */
+            body {
+                margin: 0;      /* Serahkan urusan margin ke settingan Printer */
+                padding: 0;
+            }
+
+            body * { visibility: hidden; height: 0; overflow: hidden; }
+            
+            /* 2. SETTING KERTAS: Auto (Ikut Driver) & Lebar Penuh */
+            @page { 
+                size: auto;   
+                margin: 0; /* PENTING: Set 0 agar tidak konflik dengan Driver Printer */
+            }
+
+            /* 3. PENGATURAN AREA STRUK */
+            #receipt-area, #receipt-area * { 
+                visibility: visible; 
+                height: auto;
+                color: black !important;
+                font-weight: normal !important; 
+            }
+
+            #receipt-area {
+                display: block !important;
+                position: absolute; 
+                left: 0; 
+                top: 0;
+                width: 100%; 
+                
+                padding-top: 15px;
+                padding-right: 5px; 
+
+                font-family: 'Courier New', Courier, monospace; 
+                font-size: 9pt;  
+                line-height: 1.1; 
+            }
+
+            /* 4. HEADER & INFO */
+            .receipt-header { 
+                text-align: center; 
+                margin-bottom: 5px; 
+                border-bottom: 1px dashed #000; 
+                padding-bottom: 5px; 
+            }
+            
+            .receipt-title { 
+                font-size: 11pt;
+                margin: 0; 
+                text-transform: uppercase;
+            }
+
+            .receipt-info { margin-bottom: 5px; }
+
+            /* 5. TABEL TRANSAKSI */
+            .receipt-table { 
+                width: 100%; 
+                border-collapse: collapse; 
+                margin-bottom: 5px; 
+            }
+            
+            .receipt-table th { 
+                text-align: right; 
+                border-bottom: 1px dashed #000; 
+                border-top: 1px dashed #000;
+                padding: 3px 0;
+                font-size: 8pt;
+            }
+            .receipt-table th:first-child { text-align: left; }
+
+            .receipt-table td { 
+                padding: 1px 0; 
+                text-align: right;
+                vertical-align: top; 
+            }
+            .receipt-table td:first-child { text-align: left; }
+            
+            /* 6. TOTAL & FOOTER */
+            .dashed-top { 
+                border-top: 1px dashed #000; 
+                padding-top: 5px; 
+                margin-top: 5px;
+            }
+            
+            .sign-area {
+                margin-top: 15px; 
+                display: flex; 
+                justify-content: space-between; 
+                font-size: 8pt;
+            }
+            
+            .sign-box { text-align: center; width: 40%; }
+            
+            .sign-line {
+                border-top: 1px solid #000; 
+                width: 100%; 
+                margin: 25px auto 0 auto; 
+            }
+            
+            .receipt-footer { 
+                text-align: center; 
+                margin-top: 10px; 
+                font-size: 7pt; 
+                font-style: italic;
+            }
+        }
+    </style>
+
+    {{-- LOGIKA DATA NOTA (PHP) --}}
+    @php
+        $lastTrxGroup = collect([]);
+        $printNota = null;
+        
+        if(session('transaction_success') && isset($todayTransactions) && $todayTransactions->isNotEmpty()){
+            $lastNota = $todayTransactions->first()->no_nota;
+            $printNota = $lastNota;
+            $lastTrxGroup = $todayTransactions->where('no_nota', $lastNota);
+            $trxHeader = $lastTrxGroup->first(); 
+        }
+    @endphp
+
+    {{-- AREA NOTA (HANYA MUNCUL SAAT PRINT) --}}
+    <div id="receipt-area">
+        @if($printNota && $trxHeader)
+        <div style="padding: 0 2px;">
+            
+            {{-- HEADER CABANG --}}
+            <div class="receipt-header">
+                <div class="receipt-title">{{ $trxHeader->branch->name ?? 'MONEY CHANGER' }}</div>
+                <div style="font-size: 8pt;">{{ $trxHeader->branch->address ?? 'Alamat Cabang' }}</div>
+            </div>
+
+            {{-- INFO NOTA --}}
+            <div class="receipt-info" style="display: flex; justify-content: space-between; border-bottom: 1px dashed #000; padding-bottom: 3px;">
+                <div>No: {{ $trxHeader->no_nota }}</div>
+                <div>{{ $trxHeader->created_at->format('d/m/Y H:i') }}</div>
+            </div>
+
+            {{-- INFO NASABAH (LENGKAP TAPI RAPAT) --}}
+            <div class="receipt-info" style="margin-top: 5px;">
+                <table style="width: 100%;">
+                    <tr>
+                        <td width="15%">Name</td>
+                        <td width="2%">:</td>
+                        <td>{{ \Illuminate\Support\Str::limit($trxHeader->customer_name, 25) }}</td>
+                    </tr>
+                    <tr>
+                        <td>ID No</td>
+                        <td>:</td>
+                        <td>{{ $trxHeader->customer_identity_no }}</td>
+                    </tr>
+                    @if($trxHeader->customer_type == 'CORPORATE' && $trxHeader->representative_name)
+                    <tr>
+                        <td>PIC</td>
+                        <td>:</td>
+                        <td>{{ $trxHeader->representative_name }}</td>
+                    </tr>
+                    @endif
+                    <tr>
+                        <td>Addr</td>
+                        <td>:</td>
+                        <td>{{ \Illuminate\Support\Str::limit($trxHeader->customer_address, 30) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Ctry</td>
+                        <td>:</td>
+                        <td>{{ $trxHeader->customer_country }}</td>
+                    </tr>
+                    
+                    {{-- TYPE TRANSAKSI (HEADER) --}}
+                    <tr>
+                        <td style="padding-top: 5px;">TYPE</td>
+                        <td style="padding-top: 5px;">:</td>
+                        <td style="padding-top: 5px;">
+                            {{-- UPPERCASE TANPA BOLD --}}
+                            <span style="text-transform: uppercase;">
+                                {{ $trxHeader->type == 'buy' ? 'PEMBELIAN (BUY)' : 'PENJUALAN (SELL)' }}
+                            </span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            {{-- TABEL 4 KOLOM (CURR | AMT | RATE | TOTAL) --}}
+            <table class="receipt-table">
+                <thead>
+                    <tr>
+                        <th style="width: 15%;">CURR</th>
+                        <th style="width: 25%;">AMOUNT</th>
+                        <th style="width: 25%;">RATE</th>
+                        <th style="width: 35%;">TOTAL</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @php $grandTotal = 0; @endphp
+                    @foreach($lastTrxGroup as $item)
+                    @php $grandTotal += $item->total_idr; @endphp
+                    <tr>
+                        <td>{{ $item->currency }}</td>
+                        <td>{{ number_format($item->amount_foreign, 0) }}</td> 
+                        <td>{{ number_format($item->rate, 0) }}</td>
+                        <td>{{ number_format($item->total_idr, 0) }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+
+            {{-- TOTAL (TANPA BOLD) --}}
+            <div class="dashed-top">
+                <div style="display: flex; justify-content: space-between; font-size: 11pt;">
+                    <span>TOTAL IDR</span>
+                    <span>Rp {{ number_format($grandTotal, 0) }}</span>
+                </div>
+                <div style="font-size: 8pt; margin-top: 2px;">
+                    Metode: {{ $trxHeader->payment_method }}
+                </div>
+            </div>
+
+            {{-- TANDA TANGAN --}}
+            <div class="sign-area">
+                <div class="sign-box">
+                    <div>Customer</div> 
+                    <div class="sign-line">{{ \Illuminate\Support\Str::limit($trxHeader->customer_name, 15) }}</div>
+                </div>
+
+                <div class="sign-box">
+                    <div>Cashier</div> 
+                    <div class="sign-line">{{ Auth::user()->name }}</div>
+                </div>
+            </div>
+
+            {{-- FOOTER --}}
+            <div class="receipt-footer">
+                "Transaksi ini dilakukan dibawah Threshold / Equivalent USD 25.000"
+            </div>
+
+        </div>
+        @endif
+    </div>
+
+    {{-- ================================================================= --}}
+    {{-- BAGIAN 1: MODAL & NOTIFIKASI --}}
+    {{-- ================================================================= --}}
+
+    {{-- MODAL TUTUP SHIFT --}}
+    <div id="endShiftModal" class="fixed inset-0 z-[999] bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-2xl max-w-sm w-full p-6 text-center transform transition-all border-t-4 border-red-600">
+            <h2 class="text-lg font-bold text-gray-800 mb-2">Konfirmasi Tutup Shift</h2>
+            <p class="text-xs text-gray-500 mb-6 px-4">
+                Yakin ingin mengakhiri sesi ini? <br>
+                Pastikan uang fisik sudah sesuai dengan sistem.
+            </p>
+            <div class="flex gap-3">
+                <button type="button" onclick="document.getElementById('endShiftModal').classList.add('hidden')" class="flex-1 py-2.5 rounded border border-gray-300 text-gray-700 text-xs font-bold hover:bg-gray-50 transition">BATAL</button>
+                <button type="button" onclick="document.getElementById('endShiftForm').submit()" class="flex-1 py-2.5 rounded bg-red-600 text-white text-xs font-bold hover:bg-red-700 shadow transition">YA, TUTUP</button>
+            </div>
+        </div>
+    </div>
+
+    {{-- DTTOT BLOCK --}}
+    @if(session('dttot_block'))
+    <div class="fixed inset-0 z-[999] bg-red-900/90 backdrop-blur-sm flex items-center justify-center p-4 animate-pulse">
+        <div class="bg-white rounded-lg shadow-2xl max-w-lg w-full overflow-hidden border-4 border-red-600 text-center p-8">
+            <h1 class="text-2xl font-black text-red-600 uppercase tracking-widest mb-2">TRANSAKSI DITOLAK!</h1>
+            <p class="text-gray-600 text-sm mb-4">Nasabah terdaftar dalam Database Teroris (DTTOT).</p>
+            <h2 class="text-xl font-bold text-gray-800 uppercase mb-6 bg-gray-100 p-2 rounded">{{ session('dttot_block')['name'] }}</h2>
+            <a href="{{ route('transaction.index') }}" class="block w-full bg-gray-800 hover:bg-black text-white font-bold py-3 rounded text-sm transition">KEMBALI</a>
+        </div>
+    </div>
+    @endif
+
+    {{-- SUCCESS POPUP --}}
+    @if(session('success') || session('transaction_success'))
+    <div class="fixed inset-0 z-[50] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" id="successPopup">
+        <div class="bg-white rounded-lg shadow-2xl max-w-sm w-full p-6 text-center transform transition-all border-t-4 border-green-500">
+            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            <h2 class="text-lg font-bold text-gray-800 mb-1">Transaksi Berhasil!</h2>
+            <p class="text-xs text-gray-500 mb-6">{{ session('success') ?? session('transaction_success') }}</p>
+            
+            <div class="flex flex-col gap-2">
+                <button onclick="window.print()" class="w-full bg-primary text-white font-bold py-2.5 rounded hover:opacity-90 transition shadow text-xs uppercase tracking-wide flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                    CETAK NOTA
+                </button>
+                <button onclick="document.getElementById('successPopup').remove()" class="w-full bg-gray-100 text-gray-600 font-bold py-2.5 rounded hover:bg-gray-200 transition text-xs uppercase">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- ================================================================= --}}
+    {{-- BAGIAN 2: HEADER & FORM --}}
+    {{-- ================================================================= --}}
+    <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6 pb-4 border-b border-gray-200 no-print">
+        <div>
+            <h2 class="font-bold text-xl text-gray-800 leading-tight flex items-center gap-2 border-l-4 border-primary pl-3">
+                <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                Input Transaksi
+            </h2>
+            <p class="text-xs text-gray-500 mt-1 pl-3.5">Kasir: {{ Auth::user()->name }} | {{ session('branch_name') ?? 'PUSAT' }}</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <div>
+                <input type="date" 
+                    value="{{ date('Y-m-d') }}" 
+                    onchange="document.getElementById('hiddenDate').value = this.value"
+                    class="border border-gray-300 rounded p-1.5 text-xs font-bold text-gray-700 bg-white shadow-sm cursor-pointer h-9">
+            </div>
+            <form action="{{ route('transaction.endShift') }}" method="POST" id="endShiftForm">
+                @csrf
+                <button type="button" onclick="document.getElementById('endShiftModal').classList.remove('hidden')" class="bg-gray-800 text-white px-4 py-2 rounded text-xs font-bold hover:bg-black transition shadow h-9 flex items-center gap-2">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                    TUTUP SHIFT
+                </button>
+            </form>
+        </div>
+    </div>
+
+    {{-- FORMULIR UTAMA --}}
+    <form action="{{ route('transaction.store') }}" method="POST" id="transactionForm" class="no-print">
+        @csrf
+        <input type="hidden" name="transaction_date" id="hiddenDate" value="{{ date('Y-m-d') }}">
+        
+        {{-- CARD 1: DATA NASABAH (STEP 1) --}}
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 overflow-hidden">
+            <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center gap-2">
+                <span class="bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded">STEP 1</span>
+                <h3 class="font-bold text-gray-700 text-sm uppercase tracking-wide">Data Nasabah (KYC)</h3>
+            </div>
+
+            <div class="p-0" x-data="{ custType: 'INDIVIDUAL', ...customerAutocomplete() }">
+                
+                <table class="w-full text-sm text-left border-collapse">
+                    {{-- BARIS 1: TIPE NASABAH --}}
+                    <tr class="border-b border-gray-200">
+                        <td class="bg-gray-100 p-3 w-48 font-bold text-gray-600 uppercase text-xs border-r border-gray-200">
+                            Tipe Nasabah <span class="text-red-500">*</span>
+                        </td>
+                        <td class="p-3">
+                            <div class="flex gap-4">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="customer_type" value="INDIVIDUAL" x-model="custType" class="w-4 h-4 text-primary focus:ring-primary">
+                                    <span class="text-xs font-bold text-gray-700">PERORANGAN (Individu)</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="customer_type" value="CORPORATE" x-model="custType" class="w-4 h-4 text-primary focus:ring-primary">
+                                    <span class="text-xs font-bold text-gray-700">KORPORASI (PT/CV)</span>
+                                </label>
+                            </div>
+                        </td>
+                    </tr>
+
+                    {{-- BARIS 2: NO NOTA --}}
+                    <tr class="border-b border-gray-200">
+                        <td class="bg-gray-100 p-3 font-bold text-gray-600 uppercase text-xs border-r border-gray-200">
+                            No. Nota
+                        </td>
+                        <td class="p-3">
+                            <input type="text" name="no_nota" 
+                                value="{{ old('no_nota') }}" 
+                                oninput="this.value = this.value.toUpperCase()"
+                                class="w-full md:w-1/3 border-gray-300 rounded p-1.5 text-xs font-bold font-mono bg-yellow-50 uppercase focus:ring-primary focus:border-primary" 
+                                placeholder="AUTO (KOSONGKAN JIKA BARU)">
+                            <span class="text-[10px] text-gray-400 ml-2 italic">*Otomatis Kapital</span>
+                        </td>
+                    </tr>
+
+                    {{-- BARIS 3: NAMA NASABAH --}}
+                    <tr class="border-b border-gray-200">
+                        <td class="bg-gray-100 p-3 font-bold text-gray-600 uppercase text-xs border-r border-gray-200">
+                            <span x-text="custType == 'INDIVIDUAL' ? 'Nama Lengkap' : 'Nama Perusahaan'"></span> <span class="text-red-500">*</span>
+                        </td>
+                        <td class="p-3 relative">
+                            {{-- Input Pencarian --}}
+                            <input type="text" name="customer_name" 
+                                   x-model="search" 
+                                   @input.debounce.300ms="fetchCustomers()" 
+                                   @click.away="open = false" 
+                                   autocomplete="off" 
+                                   class="w-full border-gray-300 rounded p-1.5 text-xs font-bold uppercase focus:ring-primary focus:border-primary" 
+                                   placeholder="KETIK NAMA UNTUK CARI..." required>
+                            
+                            {{-- Dropdown Autocomplete --}}
+                            <div x-show="open && filteredList.length > 0" class="absolute z-50 bg-white w-full max-w-lg border border-gray-200 rounded shadow-xl mt-1 max-h-40 overflow-y-auto" style="display: none;">
+                                <ul>
+                                    <template x-for="cust in filteredList" :key="cust.customer_identity_no">
+                                        <li @click="selectCustomer(cust)" class="p-2 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0 transition">
+                                            <div class="font-bold text-gray-800 text-xs uppercase" x-text="cust.customer_name"></div>
+                                            <div class="text-[10px] text-gray-500 font-mono">
+                                                <span x-text="cust.customer_identity_no"></span>
+                                                <span x-text="cust.customer_type == 'CORPORATE' ? '(KORP)' : ''" class="font-bold text-blue-600"></span>
+                                            </div>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+
+                    {{-- BARIS 4: IDENTITAS --}}
+                    <tr class="border-b border-gray-200">
+                        <td class="bg-gray-100 p-3 font-bold text-gray-600 uppercase text-xs border-r border-gray-200">
+                            Identitas (KTP/Pass) <span class="text-red-500">*</span>
+                        </td>
+                        <td class="p-3">
+                            <div class="flex gap-2">
+                                <select name="customer_id_type" x-model="formData.type" class="w-24 border-gray-300 rounded p-1.5 text-xs font-bold focus:ring-primary focus:border-primary">
+                                    <template x-if="custType == 'INDIVIDUAL'">
+                                        <optgroup label="Perorangan">
+                                            <option value="KTP">KTP</option>
+                                            <option value="PASPOR">PASPOR</option>
+                                            <option value="SIM">SIM</option>
+                                            <option value="KITAS">KITAS</option>
+                                            <option value="Lainnya">Lainnya</option>
+                                        </optgroup>
+                                    </template>
+                                    <template x-if="custType == 'CORPORATE'">
+                                        <optgroup label="Korporasi">
+                                            <option value="KPmIU">KPmIU</option>
+                                            <option value="NIB">NIB</option>
+                                            <option value="NPWP">NPWP</option>
+                                            <option value="SK">SK MENKUMHAM</option>
+                                        </optgroup>
+                                    </template>
+                                </select>
+                                <input type="text" name="customer_identity_no" x-model="formData.identity" class="flex-1 border-gray-300 rounded p-1.5 text-xs font-bold font-mono uppercase focus:ring-primary focus:border-primary" placeholder="NOMOR IDENTITAS" required>
+                            </div>
+                        </td>
+                    </tr>
+
+                    {{-- BARIS 5: GENDER & TANGGAL LAHIR --}}
+                    <tr class="border-b border-gray-200">
+                        <td class="bg-gray-100 p-3 font-bold text-gray-600 uppercase text-xs border-r border-gray-200">
+                            Detail Personal
+                        </td>
+                        <td class="p-3">
+                            <div class="grid grid-cols-2 gap-4">
+                                {{-- Gender (Wajib jika Perorangan) --}}
+                                <div x-show="custType == 'INDIVIDUAL'" class="flex items-center gap-2 border-r border-gray-200 pr-4">
+                                    <span class="text-[10px] font-bold text-gray-400 uppercase">Gender:</span>
+                                    <div class="flex gap-3">
+                                        <label class="flex items-center gap-1 cursor-pointer">
+                                            <input type="radio" name="customer_gender" value="L" x-model="formData.gender" class="w-3 h-3 text-primary">
+                                            <span class="text-xs font-bold text-gray-700">PRIA</span>
+                                        </label>
+                                        <label class="flex items-center gap-1 cursor-pointer">
+                                            <input type="radio" name="customer_gender" value="P" x-model="formData.gender" class="w-3 h-3 text-primary">
+                                            <span class="text-xs font-bold text-gray-700">WANITA</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                {{-- Tanggal Lahir (OPSIONAL) --}}
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] font-bold text-gray-400 uppercase whitespace-nowrap" x-text="custType == 'INDIVIDUAL' ? 'Tgl Lahir (Opsional):' : 'Tgl Berdiri (Opsional):'"></span>
+                                    <input type="date" name="customer_dob" x-model="formData.dob" class="border-gray-300 rounded p-1 text-xs font-bold uppercase focus:ring-primary focus:border-primary w-full text-gray-600">
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+                    {{-- BARIS 6: PEKERJAAN & NEGARA --}}
+                    <tr class="border-b border-gray-200">
+                        <td class="bg-gray-100 p-3 font-bold text-gray-600 uppercase text-xs border-r border-gray-200">
+                            Info Tambahan
+                        </td>
+                        <td class="p-3">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-[9px] font-bold text-gray-400 uppercase mb-0.5">
+                                        <span x-text="custType == 'INDIVIDUAL' ? 'Pekerjaan' : 'Bidang Usaha'"></span>
+                                    </label>
+                                    <input type="text" name="customer_job" x-model="formData.job" class="w-full border-gray-300 rounded p-1.5 text-xs font-bold uppercase focus:ring-primary focus:border-primary" required>
+                                </div>
+                                <div>
+                                    <label class="block text-[9px] font-bold text-gray-400 uppercase mb-0.5">Negara Asal</label>
+                                    <input type="text" name="customer_country" x-model="formData.country" class="w-full border-gray-300 rounded p-1.5 text-xs font-bold uppercase focus:ring-primary focus:border-primary" required>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+                    {{-- BARIS 7: ALAMAT LENGKAP --}}
+                    <tr class="border-b border-gray-200">
+                        <td class="bg-gray-100 p-3 font-bold text-gray-600 uppercase text-xs border-r border-gray-200">
+                            Alamat Lengkap <span class="text-red-500">*</span>
+                        </td>
+                        <td class="p-3">
+                            <input type="text" name="customer_address" x-model="formData.address" class="w-full border-gray-300 rounded p-1.5 text-xs font-bold uppercase focus:ring-primary focus:border-primary" placeholder="JALAN, NOMOR, KOTA" required>
+                        </td>
+                    </tr>
+
+                    {{-- BARIS 8: APU PPT --}}
+                    <tr class="border-b border-gray-200 bg-yellow-50/30">
+                        <td class="bg-yellow-100/50 p-3 font-bold text-yellow-800 uppercase text-xs border-r border-yellow-200">
+                            Data APU-PPT
+                        </td>
+                        <td class="p-3">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-[9px] font-bold text-gray-400 uppercase mb-0.5">Sumber Dana</label>
+                                    <select name="source_of_funds" x-model="formData.source" class="w-full border-gray-300 rounded p-1.5 text-xs font-bold bg-white focus:ring-primary focus:border-primary" required>
+                                        <option value="">-- PILIH --</option>
+                                        <option value="GAJI">GAJI / UPAH</option>
+                                        <option value="HASIL USAHA">HASIL USAHA</option>
+                                        <option value="WARISAN">WARISAN</option>
+                                        <option value="TABUNGAN">TABUNGAN</option>
+                                        <option value="JUAL ASET">PENJUALAN ASET</option>
+                                        <option value="LAINNYA">LAINNYA</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[9px] font-bold text-gray-400 uppercase mb-0.5">Tujuan Transaksi</label>
+                                    <select name="transaction_purpose" x-model="formData.purpose" class="w-full border-gray-300 rounded p-1.5 text-xs font-bold bg-white focus:ring-primary focus:border-primary" required>
+                                        <option value="">-- PILIH --</option>
+                                        <option value="LIVING COST">BIAYA HIDUP</option>
+                                        <option value="BISNIS">BISNIS</option>
+                                        <option value="WISATA">WISATA / TRAVEL</option>
+                                        <option value="PENDIDIKAN">PENDIDIKAN</option>
+                                        <option value="INVESTASI">INVESTASI</option>
+                                        <option value="LAINNYA">LAINNYA</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+                    {{-- BARIS 9: PIC (KHUSUS KORPORASI) --}}
+                    <tr x-show="custType == 'CORPORATE'" style="display: none;" class="bg-blue-50/30">
+                        <td class="bg-blue-100/50 p-3 font-bold text-blue-800 uppercase text-xs border-r border-blue-200">
+                            Data Pengurus (PIC)
+                        </td>
+                        <td class="p-3">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-[9px] font-bold text-blue-400 uppercase mb-0.5">Nama Pengurus</label>
+                                    <input type="text" name="representative_name" x-model="formData.pic_name" class="w-full border-gray-300 rounded p-1.5 text-xs font-bold uppercase" placeholder="NAMA SESUAI ID">
+                                </div>
+                                <div class="flex gap-2">
+                                    <div class="w-20">
+                                        <label class="block text-[9px] font-bold text-blue-400 uppercase mb-0.5">Tipe ID</label>
+                                        <select name="representative_id_type" x-model="formData.pic_id_type" class="w-full border-gray-300 rounded p-1.5 text-xs font-bold">
+                                            <option value="KTP">KTP</option>
+                                            <option value="PASPOR">PASPOR</option>
+                                            <option value="SIM">SIM</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex-1">
+                                        <label class="block text-[9px] font-bold text-blue-400 uppercase mb-0.5">No. ID</label>
+                                        <input type="text" name="representative_id_no" x-model="formData.pic_id_no" class="w-full border-gray-300 rounded p-1.5 text-xs font-bold uppercase" placeholder="NOMOR ID">
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+                </table>
+            </div>
+        </div>
+
+        {{-- CARD 2: RINCIAN VALAS (STEP 2) --}}
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <span class="bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded">STEP 2</span>
+                    <h3 class="font-bold text-gray-700 text-sm uppercase tracking-wide">Rincian Mata Uang</h3>
+                </div>
+                <button type="button" onclick="addRow()" class="bg-gray-800 text-white px-3 py-1.5 rounded shadow hover:bg-black transition text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    Tambah Baris
+                </button>
+            </div>
+            
+            {{-- [UPDATE] MASTER SWITCH TIPE TRANSAKSI --}}
+            <div class="px-4 py-3 bg-yellow-50 border-b border-yellow-100 flex items-center">
+                <label class="text-xs font-bold text-gray-500 uppercase mr-2">JENIS TRANSAKSI</label>
+                <select id="globalType" onchange="updateAllRowsType()" class="border-gray-300 rounded p-1.5 text-sm font-bold w-48 focus:ring-primary focus:border-primary">
+                    <option value="buy" selected>BELI</option>
+                    <option value="sell">JUAL</option>
+                </select>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-primary text-white font-semibold text-xs uppercase tracking-wide">
+                        <tr>
+                            {{-- [UPDATE] KOLOM TIPE DIHAPUS --}}
+                            <th class="p-3">Currency</th>
+                            <th class="p-3 text-right">Amount</th>
+                            <th class="p-3 text-right">Rate</th>
+                            <th class="p-3 text-right">Total</th>
+                            <th class="p-3 text-center w-16">Hapus</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-gray-100">
+                        <tr class="bg-white group hover:bg-gray-50 transition">
+                            
+                            {{-- [UPDATE] INPUT HIDDEN UNTUK TIPE --}}
+                            <input type="hidden" name="items[0][type]" class="item-type" value="buy">
+
+                            <td class="p-2 align-top">
+                                <input list="currencyOptions" name="items[0][currency_code]" class="w-full p-2 border border-gray-300 rounded font-bold text-gray-800 uppercase text-xs focus:border-primary focus:ring-primary outline-none h-9" placeholder="KODE" required>
+                            </td>
+                            <td class="p-2 align-top">
+                                <input type="text" inputmode="numeric" name="items[0][amount_foreign]" placeholder="0" class="w-full p-2 border border-gray-300 rounded text-right font-mono text-xs font-bold focus:border-primary focus:ring-primary outline-none h-9" onkeyup="formatNumber(this)" required>
+                            </td>
+                            <td class="p-2 align-top">
+                                <input type="number" step="any" name="items[0][rate]" placeholder="0" class="w-full p-2 border border-gray-300 rounded text-right font-mono text-xs focus:border-primary focus:ring-primary outline-none h-9" oninput="calculateRow(this)" required>
+                            </td>
+                            <td class="p-2 align-top">
+                                <input type="text" readonly class="w-full bg-gray-50 border border-gray-200 rounded text-right font-bold text-gray-900 total-display text-xs px-2 py-2 font-mono outline-none h-9" value="0">
+                            </td>
+                            <td class="p-2 text-center align-top">
+                                <button type="button" onclick="removeRow(this)" class="bg-gray-100 text-gray-400 p-1.5 rounded hover:bg-red-50 hover:text-red-500 transition h-8 w-8 flex items-center justify-center">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tfoot class="bg-gray-50 border-t border-gray-200">
+                        <tr>
+                            <td colspan="3" class="p-3 text-right font-bold text-gray-600 uppercase text-xs">Total Transaksi (IDR)</td>
+                            <td class="p-3 text-right"><span id="grandTotal" class="text-lg font-bold text-primary font-mono">Rp 0</span></td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        {{-- CARD 3: METODE PEMBAYARAN --}}
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mt-6 relative overflow-hidden" x-data="{ method: 'CASH' }">
+            <div class="absolute top-0 left-0 w-1 h-full bg-green-600"></div>
+            <h3 class="font-bold text-gray-800 mb-4 border-b pb-2 flex items-center gap-2 text-lg">
+                3. Pembayaran
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Metode Pembayaran</label>
+                    <div class="flex gap-4">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="payment_method" value="CASH" class="peer sr-only" x-model="method">
+                            <div class="px-6 py-3 rounded-lg border-2 border-gray-200 text-gray-500 font-bold peer-checked:border-green-600 peer-checked:text-green-600 peer-checked:bg-green-50 transition flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                TUNAI (CASH)
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="payment_method" value="TRANSFER" class="peer sr-only" x-model="method">
+                            <div class="px-6 py-3 rounded-lg border-2 border-gray-200 text-gray-500 font-bold peer-checked:border-blue-600 peer-checked:text-blue-600 peer-checked:bg-blue-50 transition flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                                TRANSFER BANK
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div x-show="method == 'TRANSFER'" style="display: none;">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Pilih Rekening Bank <span class="text-red-500">*</span></label>
+                    <select name="bank_account_id" class="w-full p-3 border border-gray-300 rounded-lg font-bold text-gray-700 focus:ring-blue-600 focus:border-blue-600">
+                        <option value="">-- PILIH BANK TUJUAN --</option>
+                        @foreach($bankAccounts as $bank)
+                            <option value="{{ $bank->id }}">{{ $bank->name }} ({{ $bank->code }})</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-6 pb-10">
+            <button type="submit" class="w-full bg-primary text-white font-bold py-3.5 rounded-lg shadow-lg hover:opacity-90 transition transform active:scale-[0.99] text-sm uppercase tracking-widest flex justify-center items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                PROSES TRANSAKSI SEKARANG
+            </button>
+        </div>
+    </form>
+    
+    <datalist id="currencyOptions">
+        @foreach($currencies as $curr)
+            <option value="{{ $curr->code }}">{{ $curr->name }}</option>
+        @endforeach
+    </datalist>
+
+    {{-- ================================================================= --}}
+    {{-- SCRIPT JAVASCRIPT --}}
+    {{-- ================================================================= --}}
+    <script>
+        function openEndShiftModal() {
+            document.getElementById('endShiftModal').classList.remove('hidden');
+        }
+        function closeEndShiftModal() {
+            document.getElementById('endShiftModal').classList.add('hidden');
+        }
+
+        function formatNumber(input) {
+            let value = input.value.replace(/\D/g, '');
+            if (value !== '') value = new Intl.NumberFormat('id-ID').format(value);
+            input.value = value;
+            calculateRow(input); 
+        }
+
+        function parseNumber(str) {
+            if (!str) return 0;
+            return parseFloat(str.replace(/\./g, '').replace(/,/g, '.')) || 0;
+        }
+
+        // --- [BARU] AUTOCOMPLETE LOGIC WITH AJAX FETCH ---
+        function customerAutocomplete() {
+            return {
+                search: '',
+                open: false,
+                filteredList: [],
+                formData: {
+                    type: 'KTP', identity: '', address: '', job: '', country: '',
+                    gender: '', dob: '', // Data Tambahan
+                    pic_name: '', pic_id_type: 'KTP', pic_id_no: '', // PIC
+                    source: '', purpose: '' // APU-PPT
+                },
+                // Fungsi Fetch API ke Server
+                async fetchCustomers() {
+                    if (this.search.length < 2) { 
+                        this.open = false; 
+                        return; 
+                    }
+                    
+                    try {
+                        let response = await fetch(`{{ route('transaction.search.customers') }}?q=${this.search}`);
+                        let data = await response.json();
+                        
+                        this.filteredList = data;
+                        this.open = data.length > 0;
+                    } catch (error) {
+                        console.error('Gagal mengambil data:', error);
+                    }
+                },
+                selectCustomer(c) {
+                    // Update Search Box & Tipe Nasabah
+                    this.search = c.customer_name;
+                    this.custType = c.customer_type || 'INDIVIDUAL';
+
+                    // Update Semua Field (Auto Fill)
+                    this.formData.type = c.customer_id_type || 'KTP';
+                    this.formData.identity = c.customer_identity_no || '';
+                    this.formData.address = c.customer_address || '';
+                    this.formData.job = c.customer_job || '';
+                    this.formData.country = c.customer_country || '';
+                    this.formData.gender = c.customer_gender || '';
+                    this.formData.dob = c.customer_dob || '';
+                    
+                    // APU PPT
+                    this.formData.source = c.source_of_funds || '';
+                    this.formData.purpose = c.transaction_purpose || '';
+
+                    // Data PIC (Jika Ada)
+                    this.formData.pic_name = c.representative_name || '';
+                    this.formData.pic_id_type = c.representative_id_type || 'KTP';
+                    this.formData.pic_id_no = c.representative_id_no || '';
+
+                    this.open = false;
+                }
+            }
+        }
+
+        // --- [UPDATE] ROW MANIPULATION LOGIC (GLOBAL SWITCH) ---
+        let rowCount = 1;
+        
+        // Fungsi Tambah Baris
+        function addRow() {
+            const tbody = document.getElementById('tableBody');
+            const newRow = document.createElement('tr');
+            newRow.className = "bg-white border-t border-gray-100 group hover:bg-gray-50 transition";
+            
+            // Ambil nilai Tipe dari Master Switch di atas
+            let currentType = document.getElementById('globalType').value;
+
+            newRow.innerHTML = `
+                <input type="hidden" name="items[${rowCount}][type]" class="item-type" value="${currentType}">
+
+                <td class="p-2 align-top">
+                     <input list="currencyOptions" name="items[${rowCount}][currency_code]" class="w-full p-2 border border-gray-300 rounded font-bold text-gray-800 uppercase text-xs focus:border-primary focus:ring-primary outline-none h-9" placeholder="KODE" required>
+                </td>
+                <td class="p-2 align-top">
+                    <input type="text" inputmode="numeric" name="items[${rowCount}][amount_foreign]" placeholder="0" class="w-full p-2 border border-gray-300 rounded text-right font-mono text-xs font-bold focus:border-primary focus:ring-primary outline-none h-9" onkeyup="formatNumber(this)" required>
+                </td>
+                <td class="p-2 align-top">
+                    <input type="number" step="any" name="items[${rowCount}][rate]" placeholder="0" class="w-full p-2 border border-gray-300 rounded text-right font-mono text-xs focus:border-primary focus:ring-primary outline-none h-9" oninput="calculateRow(this)" required>
+                </td>
+                <td class="p-2 align-top">
+                    <input type="text" readonly class="w-full bg-gray-50 border border-gray-200 rounded text-right font-bold text-gray-900 total-display text-xs px-2 py-2 font-mono outline-none h-9" value="0">
+                </td>
+                <td class="p-2 text-center align-top">
+                    <button type="button" onclick="removeRow(this)" class="bg-gray-100 text-gray-400 p-2 rounded hover:bg-red-50 hover:text-red-500 transition h-9 w-9 flex items-center justify-center">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(newRow);
+            rowCount++;
+        }
+
+        // [BARU] Fungsi Sinkronisasi saat Master Switch berubah
+        function updateAllRowsType() {
+            let type = document.getElementById('globalType').value;
+            // Cari semua input hidden dengan class 'item-type' dan update nilainya
+            document.querySelectorAll('.item-type').forEach(input => {
+                input.value = type;
+            });
+        }
+
+        function removeRow(btn) {
+            const row = btn.closest('tr');
+            if (document.getElementById('tableBody').rows.length > 1) {
+                row.remove();
+                calculateGrandTotal();
+            } else {
+                alert("Minimal harus ada satu baris transaksi!");
+            }
+        }
+
+        function calculateRow(element) {
+            const row = element.closest('tr');
+            let amount = parseNumber(row.querySelector('input[name*="[amount_foreign]"]').value);
+            let rateInput = row.querySelector('input[name*="[rate]"]');
+            let rate = parseFloat(rateInput.value) || 0;
+            
+            let total = amount * rate;
+            row.querySelector('.total-display').value = new Intl.NumberFormat('id-ID').format(total);
+            calculateGrandTotal();
+        }
+
+        function calculateGrandTotal() {
+            let grandTotal = 0;
+            document.querySelectorAll('#tableBody tr').forEach(row => {
+                let amount = parseNumber(row.querySelector('input[name*="[amount_foreign]"]').value);
+                let rateInput = row.querySelector('input[name*="[rate]"]');
+                let rate = parseFloat(rateInput.value) || 0;
+                grandTotal += (amount * rate);
+            });
+            document.getElementById('grandTotal').innerText = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(grandTotal);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('transactionForm').addEventListener('submit', function(e) {
+                let inputs = this.querySelectorAll('input[name*="amount_foreign"]');
+                inputs.forEach(input => {
+                    input.value = parseNumber(input.value); 
+                });
+            });
+        });
+    </script>
+@endsection
