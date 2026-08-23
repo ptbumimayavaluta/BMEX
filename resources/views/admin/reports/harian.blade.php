@@ -74,7 +74,7 @@
     <div id="printableArea" class="space-y-8">
         
         <div class="print-header">
-            <h1 class="text-2xl font-bold uppercase">PT. BALI MERTHA MANDIRI</h1>
+            <h1 class="text-2xl font-bold uppercase">BALI MONEY EXCHANGE</h1>
             <p class="text-sm">Authorized Money Changer</p>
             <hr class="my-2 border-black">
             <h2 class="text-xl font-bold mt-2">LAPORAN MUTASI HARIAN</h2>

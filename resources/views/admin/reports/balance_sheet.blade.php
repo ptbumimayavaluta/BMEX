@@ -84,7 +84,7 @@
         
         {{-- KOP LAPORAN --}}
         <div class="text-center mb-10 pb-6 border-b-2 border-gray-800 header-section">
-            <h1 class="text-2xl font-bold uppercase tracking-widest text-gray-900">PT. BALI MERTHA MANDIRI</h1>
+            <h1 class="text-2xl font-bold uppercase tracking-widest text-gray-900">BALI MONEY EXCHANGE</h1>
             <h2 class="text-lg font-bold text-gray-600 uppercase mt-1 tracking-wide">Laporan Posisi Keuangan (Neraca)</h2>
             <p class="text-sm font-bold text-gray-500 mt-2 bg-gray-100 inline-block px-4 py-1 rounded-full uppercase tracking-wider no-print">PER 31 DESEMBER {{ $year }}</p>
             <p class="text-sm font-bold text-gray-500 mt-2 uppercase tracking-wider print:block hidden">PER 31 DESEMBER {{ $year }}</p>

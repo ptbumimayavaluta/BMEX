@@ -119,7 +119,7 @@
             {{-- HEADER CABANG --}}
             <div class="receipt-header">
                 {{-- SAMA PERSIS SEPERTI INDEX --}}
-                <div class="receipt-title" style="font-weight: bold; font-size: 12pt;">PT. BALI MERTHA MANDIRI</div>
+                <div class="receipt-title" style="font-weight: bold; font-size: 12pt;">BALI MONEY EXCHANGE</div>
                 <div class="receipt-title">{{ $transaction->branch->name ?? 'MONEY CHANGER' }}</div>
                 <div style="font-size: 8pt;">{{ $transaction->branch->address ?? 'Alamat Cabang' }}</div>
             </div>

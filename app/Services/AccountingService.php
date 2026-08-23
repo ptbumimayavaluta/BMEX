@@ -403,14 +403,12 @@ class AccountingService
      */
     public static function generateMonthlyHPPJournal($month, $year, $branchId = null)
     {
-        // PERBAIKAN 1: Inisialisasi $hpp di luar try agar tidak timbul Undefined Variable
         $hpp = 0;
 
         try {
-            // Karena laporan neraca Anda bersifat general/konsolidasi, pusatkan ke ID 3 (Kantor Pusat)
-            $bId = 3; 
+            // Diubah dari 3 menjadi 1 (Kantor Pusat)
+            $bId = 1; 
 
-            // A. Hitung Total Pembelian & Valuasi Stok (Secara Konsolidasi / Global)
             $startDate = Carbon::createFromDate($year, $month, 1)->startOfDay();
             $endDate   = $startDate->copy()->endOfMonth()->endOfDay();
 
@@ -526,8 +524,8 @@ class AccountingService
     public static function generateMonthlyDepreciation($month, $year, $branchId = null)
     {
         try {
-            // Karena laporan neraca Anda bersifat general/konsolidasi, pusatkan ke ID 3 (Kantor Pusat)
-            $bId = 3;
+            // Diubah dari 3 menjadi 1 (Kantor Pusat)
+            $bId = 1;
 
             $startDate = Carbon::createFromDate($year, $month, 1)->startOfDay();
             $endDate   = $startDate->copy()->endOfMonth()->endOfDay();

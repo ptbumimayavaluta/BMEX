@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="{{ asset('img/bmm.png') }}" type="image/png">
-    <title>PT. BALI MERTHA MANDIRI</title>
+    <title>BALI MONEY EXCHANGE</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
     <script>
@@ -27,10 +27,10 @@
         <div class="text-center mb-8">
             {{-- LOGO --}}
             <div class="flex justify-center mb-4">
-                <img src="{{ asset('img/bmm.png') }}" alt="Logo BMM" class="h-20 w-auto object-contain drop-shadow-md">
+                <img src="{{ asset('img/bmex.png') }}" alt="Logo BMEX" class="h-20 w-auto object-contain drop-shadow-md">
             </div>
             
-            <h1 class="text-2xl font-bold text-gray-800">PT. BALI MERTHA MANDIRI</h1>
+            <h1 class="text-2xl font-bold text-gray-800">BALI MONEY EXCHANGE</h1>
             <p class="text-sm text-gray-500 mt-1">Silahkan masuk ke dalam sistem</p>
         </div>
 
@@ -96,7 +96,7 @@
         </form>
 
         <div class="text-center mt-6 text-xs text-gray-400">
-            &copy; 2025 Powered by PT. Bali Mertha Mandiri
+            &copy; 2026 Powered by BALI MONEY EXCHANGE
         </div>
 
     </div>

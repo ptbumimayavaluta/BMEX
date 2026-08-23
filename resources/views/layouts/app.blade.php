@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>PT. BALI MERTHA MANDIRI</title>
-    <link rel="icon" href="{{ asset('img/bmm.png') }}" type="image/png">
+    <title>BALI MONEY EXCHANGE</title>
+    <link rel="icon" href="{{ asset('img/bmex.png') }}" type="image/png">
     
     {{-- Scripts --}}
     <script src="https://cdn.tailwindcss.com"></script>
@@ -18,7 +18,7 @@
                 extend: {
                     colors: {
                         // CUKUP GANTI KODE INI, SEMUA HALAMAN AKAN BERUBAH
-                        primary: '#0A2647',   /* Biru Laut Cerah */
+                        primary: '#040d3f',   /* Biru Laut Cerah */
                         
                         // Warna background halaman (Putih Abu Tipis)
                         bglo: '#f8fafc',      
@@ -71,7 +71,7 @@
                     <div class="w-8 h-8 bg-white/20 backdrop-blur-sm text-white rounded-lg flex items-center justify-center font-bold text-sm border border-white/30">
                         MC
                     </div>
-                    <span class="tracking-wide text-sm">PT. BALI MERTHA MANDIRI</span>
+                    <span class="tracking-wide text-sm">BALI MONEY EXCHANGE</span>
                 </div>
                 {{-- Tombol Menu Mobile --}}
                 <a href="{{ route('admin.dashboard') }}" class="text-xs bg-white text-primary px-3 py-1.5 rounded-lg font-bold shadow-sm hover:bg-gray-100 transition">

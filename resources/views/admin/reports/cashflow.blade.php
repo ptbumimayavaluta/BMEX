@@ -113,7 +113,7 @@
                     @if(isset($branchName) && $branchName != 'SEMUA CABANG')
                         {{ $branchName }}
                     @else
-                        PT. BALI MERTHA MANDIRI
+                        BALI MONEY EXCHANGE
                     @endif
                 </h1>
                 

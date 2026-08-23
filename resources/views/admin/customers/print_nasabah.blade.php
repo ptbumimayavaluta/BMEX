@@ -46,7 +46,7 @@
 </head>
 <body onload="window.print()">
     <div class="header">
-        <h2>PT. BALI MERTHA MANDIRI</h2>
+        <h2>BALI MONEY EXCHANGE</h2>
         <p>LAPORAN DATA TRANSAKSI NASABAH (DETAIL LENGKAP)</p>
         <p>Dicetak Tanggal: {{ date('d/m/Y H:i') }} | Oleh: {{ Auth::user()->name }}</p>
     </div>

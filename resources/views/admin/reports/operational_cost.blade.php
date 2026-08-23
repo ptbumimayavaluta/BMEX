@@ -152,7 +152,7 @@
         
         {{-- 2. HEADER CETAK (KHUSUS PRINT) --}}
         <div class="print-header">
-            <h1 class="text-xl font-bold uppercase">PT. BALI MERTHA MANDIRI</h1>
+            <h1 class="text-xl font-bold uppercase">BALI MONEY EXCHANGE</h1>
             <h2 class="text-lg font-bold">LAPORAN BIAYA OPERASIONAL</h2>
             <p class="text-xs">
                 Periode: {{ date('F Y', mktime(0, 0, 0, $month, 1, $year)) }}

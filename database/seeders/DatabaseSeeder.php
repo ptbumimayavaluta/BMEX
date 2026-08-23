@@ -36,14 +36,10 @@ class DatabaseSeeder extends Seeder
 
         // 3. KANTOR CABANG (Pakai firstOrCreate agar tidak error duplicate)
         $pusat = Branch::firstOrCreate(
-            ['name' => 'KANTOR PUSAT JAKARTA'], // Kunci Pengecekan
-            ['address' => 'Jl. Jenderal Sudirman No. 1, Jakarta']
+            ['name' => 'KANTOR PUSAT BMEX'], // Kunci Pengecekan
+            ['address' => 'RICE TERRACE, JL. RAYA TEGALLALANG']
         );
 
-        $bali = Branch::firstOrCreate(
-            ['name' => 'CABANG KUTA BALI'],
-            ['address' => 'Jl. Legian No. 99, Kuta, Bali']
-        );
 
         // 4. USERS (HIERARKI LENGKAP - ANTI DUPLIKAT)
         

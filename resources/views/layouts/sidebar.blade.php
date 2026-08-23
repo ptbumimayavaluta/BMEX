@@ -5,10 +5,10 @@
         <div class="h-16 flex items-center px-6 border-b border-white/20 shadow-sm">
             <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 group">
                 {{-- Logo --}}
-                <img src="{{ asset('img/bmm.png') }}" class="w-10 h-10 object-contain drop-shadow-sm transition-transform group-hover:scale-110" alt="Logo">
+                <img src="{{ asset('img/bmex.png') }}" class="w-10 h-10 object-contain drop-shadow-sm transition-transform group-hover:scale-110" alt="Logo">
                 {{-- Teks Nama PT --}}
                 <span class="text-white font-bold text-lg tracking-wide uppercase">
-                    PT. BMM
+                    PT. BMEX
                 </span>
             </a>
         </div>

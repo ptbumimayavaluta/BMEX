@@ -160,7 +160,7 @@
             
             {{-- HEADER CETAK --}}
             <div class="print-header">
-                <h1 class="text-xl font-bold uppercase tracking-widest">PT. BALI MERTHA MANDIRI</h1>
+                <h1 class="text-xl font-bold uppercase tracking-widest">BALI MONEY EXCHANGE</h1>
                 <h2 class="text-lg font-bold mt-2">LAPORAN PERUBAHAN EKUITAS</h2>
                 <p class="text-xs mt-1">Periode: {{ date('F Y', mktime(0, 0, 0, $month, 1, $year)) }}</p>
             </div>
@@ -168,7 +168,7 @@
             {{-- HEADER WEB --}}
             <div class="no-print mb-10 border-b border-gray-100 pb-6 text-center">
                 <h2 class="text-xl font-bold text-gray-800 uppercase tracking-widest">Laporan Perubahan Modal</h2>
-                <h3 class="text-lg font-bold text-primary uppercase tracking-wide mt-1">PT. BALI MERTHA MANDIRI</h3>
+                <h3 class="text-lg font-bold text-primary uppercase tracking-wide mt-1">BALI MONEY EXCHANGE</h3>
                 <p class="text-xs text-gray-500 font-bold mt-2 bg-gray-100 inline-block px-3 py-1 rounded-full uppercase tracking-wider">
                     PERIODE: {{ strtoupper(date('F Y', mktime(0, 0, 0, $month, 1, $year))) }}
                 </p>

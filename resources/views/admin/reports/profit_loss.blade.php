@@ -140,7 +140,7 @@
         
         {{-- 3. HEADER CETAK (KHUSUS PRINT) --}}
         <div class="print-header">
-            <h1 class="text-2xl font-bold uppercase">PT. BALI MERTHA MANDIRI</h1>
+            <h1 class="text-2xl font-bold uppercase">BALI MONEY EXCHANGE</h1>
             <h2 class="text-lg font-bold mt-1">LAPORAN LABA RUGI (INCOME STATEMENT)</h2>
             <p class="text-xs">
                 Periode: {{ date('F Y', mktime(0, 0, 0, $month, 1, $year)) }}
@@ -152,7 +152,7 @@
 
         {{-- JUDUL HALAMAN DI WEB (CLEAN STYLE) --}}
         <div class="text-center mb-10 border-b border-gray-200 pb-6 no-print">
-            <h2 class="text-2xl font-bold text-gray-800 uppercase tracking-widest">PT. BALI MERTHA MANDIRI</h2>
+            <h2 class="text-2xl font-bold text-gray-800 uppercase tracking-widest">BALI MONEY EXCHANGE</h2>
             <h3 class="text-xl font-bold text-primary mt-1 uppercase tracking-wide">Laporan Laba Rugi</h3>
             <p class="text-xs text-gray-500 font-bold mt-2 bg-gray-100 inline-block px-4 py-1.5 rounded-full uppercase tracking-wider">
                 PERIODE: {{ strtoupper(date('F Y', mktime(0, 0, 0, $month, 1, $year))) }}
