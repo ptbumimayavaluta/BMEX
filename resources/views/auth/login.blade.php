@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="{{ asset('img/bmm.png') }}" type="image/png">
+    <link rel="icon" href="{{ asset('img/bmex.png') }}" type="image/png">
     <title>BALI MONEY EXCHANGE</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -31,7 +31,7 @@
             </div>
             
             <h1 class="text-2xl font-bold text-gray-800">BALI MONEY EXCHANGE</h1>
-            <p class="text-sm text-gray-500 mt-1">Silahkan masuk ke dalam sistem</p>
+            <p class="text-sm text-gray-500 mt-1">BMeX System</p>
         </div>
 
         <form action="{{ route('login') }}" method="POST" class="space-y-5">
@@ -46,12 +46,12 @@
 
             {{-- 1. INPUT EMAIL/USERNAME (ICON DI KANAN) --}}
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Email / ID Pengguna</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Email/Username</label>
                 <div class="relative">
                     {{-- Input: Padding Kiri Kecil (pl-4), Padding Kanan Besar (pr-10) untuk Icon --}}
                     <input type="text" name="email" value="{{ old('email') }}" required autofocus
                         class="w-full pl-4 pr-10 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition" 
-                        placeholder="Masukkan Email atau Username">
+                        placeholder="Email or Username">
                     
                     {{-- Icon User: Posisi Absolute di KANAN (right-0) --}}
                     <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -64,7 +64,7 @@
 
             {{-- 2. INPUT PASSWORD (ICON MATA DI KANAN) --}}
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Kata Sandi</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
                 <div class="relative">
                     <input type="password" name="password" id="passwordInput" required autocomplete="current-password"
                         class="w-full pl-4 pr-12 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition" 
@@ -96,7 +96,7 @@
         </form>
 
         <div class="text-center mt-6 text-xs text-gray-400">
-            &copy; 2026 Powered by BALI MONEY EXCHANGE
+            &copy; 2026 Powered by X-POSE - Umar Hidayat
         </div>
 
     </div>
