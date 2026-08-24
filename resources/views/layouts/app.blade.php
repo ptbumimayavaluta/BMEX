@@ -96,9 +96,9 @@
         <p style="color: #666; font-size: 14px; line-height: 1.5; margin-bottom: 20px;">
             Anda telah tidak aktif dalam beberapa waktu. Demi keamanan data keuangan, silakan login kembali.
         </p>
-        <button onclick="window.location.reload()" style="background-color: #2563eb; color: #ffffff; border: none; padding: 12px 24px; font-size: 14px; font-weight: 600; border-radius: 6px; cursor: pointer; transition: background 0.2s;">
+        <a href="{{ route('login') }}" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 12px 24px; font-size: 14px; font-weight: 600; border-radius: 6px; cursor: pointer; transition: background 0.2s;">
             Login Ulang Sekarang
-        </button>
+        </a>
     </div>
 </div>
 
@@ -137,6 +137,11 @@
                 const modal = document.getElementById('session-timeout-modal');
                 if (modal && modal.style.display !== 'flex') {
                     modal.style.display = 'flex';
+
+                    // Otomatis arahkan ke halaman login dalam 3 detik
+                    setTimeout(function() {
+                        window.location.href = "{{ route('login') }}";
+                    }, 3000);
                 }
             }
         });
