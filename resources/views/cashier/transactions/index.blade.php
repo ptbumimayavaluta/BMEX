@@ -32,18 +32,27 @@
             }
 
             #receipt-area {
-                display: block !important;
-                position: absolute; 
-                left: 0; 
-                top: 0;
-                width: 100%; 
-                
-                padding-top: 15px;
-                padding-right: 5px; 
+            display: block !important;
+            position: absolute; 
+            left: 0; 
+            top: 0;
+            width: 72mm; /* Diubah dari 100% agar pas di kertas Roll 76mm TM-U220 */
 
-                font-family: 'Courier New', Courier, monospace; 
-                font-size: 9pt;  
-                line-height: 1.1; 
+            padding-top: 5px;
+            padding-right: 2mm; 
+
+            /* Memicu penggantian font ke internal printer via Utility Epson */
+            font-family: Arial, Helvetica, 'FontA11', 'FontB11', 'Control', sans-serif !important; 
+            font-size: 9pt;  
+            line-height: 1.15; 
+            letter-spacing: 0px;
+        }
+            #receipt-area table, 
+            #receipt-area td, 
+            #receipt-area th, 
+            #receipt-area div,
+            #receipt-area span {
+                font-family: inherit !important;
             }
 
             /* 4. HEADER & INFO */
@@ -81,7 +90,8 @@
             .receipt-table td { 
                 padding: 1px 0; 
                 text-align: right;
-                vertical-align: top; 
+                vertical-align: top;
+                font-size: 8pt;
             }
             .receipt-table td:first-child { text-align: left; }
             
@@ -104,13 +114,13 @@
             .sign-line {
                 border-top: 1px solid #000; 
                 width: 100%; 
-                margin: 25px auto 0 auto; 
+                margin: 55px auto 0 auto; 
             }
             
             .receipt-footer { 
                 text-align: center; 
                 margin-top: 10px; 
-                font-size: 7pt; 
+                font-size: 8pt; 
                 font-style: italic;
             }
         }
@@ -136,6 +146,7 @@
             
             {{-- HEADER CABANG --}}
             <div class="receipt-header">
+                <div class="receipt-title" style="font-weight: bold; font-size: 12pt;">BALI MONEY EXCHANGE</div>
                 <div class="receipt-title">{{ $trxHeader->branch->name ?? 'MONEY CHANGER' }}</div>
                 <div style="font-size: 8pt;">{{ $trxHeader->branch->address ?? 'Alamat Cabang' }}</div>
             </div>
@@ -217,7 +228,7 @@
 
             {{-- TOTAL (TANPA BOLD) --}}
             <div class="dashed-top">
-                <div style="display: flex; justify-content: space-between; font-size: 11pt;">
+                <div style="display: flex; justify-content: space-between; font-size: 9pt;">
                     <span>TOTAL IDR</span>
                     <span>Rp {{ number_format($grandTotal, 0) }}</span>
                 </div>
@@ -234,14 +245,17 @@
                 </div>
 
                 <div class="sign-box">
-                    <div>Cashier</div> 
+                    <div>Customer Service</div> 
                     <div class="sign-line">{{ Auth::user()->name }}</div>
                 </div>
             </div>
 
             {{-- FOOTER --}}
             <div class="receipt-footer">
-                "Transaksi ini dilakukan dibawah Threshold / Equivalent USD 25.000"
+                "This transaction was conducted below the threshold / equivalent to USD 10,000"
+            </div>
+            <div class="receipt-footer">
+                "Please recount your money before leaving the outlet/office. No complaints or claims regarding a shortfall will be entertained after leaving the counter."
             </div>
 
         </div>

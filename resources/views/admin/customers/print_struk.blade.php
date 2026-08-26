@@ -6,7 +6,7 @@
     <title>Cetak Struk #{{ $transaction->no_nota }}</title>
     <style>
         /* ================================================================= */
-        /* GAYA CSS (HASIL KLONING DARI INDEX.BLADE.PHP) */
+        /* GAYA CSS (HASIL DISINKRONKAN DENGAN INDEX.BLADE.PHP) */
         /* ================================================================= */
         
         /* Reset bawaan browser */
@@ -27,18 +27,26 @@
         #receipt-area {
             display: block;
             position: relative; /* Diubah jadi relative karena ini halaman khusus print */
-            width: 100%; 
+            width: 72mm; /* Diubah dari 100% agar pas di kertas Roll 76mm TM-U220 */
             
-            /* Padding atas untuk hindari blind spot printer (SAMA SEPERTI INDEX) */
-            padding-top: 15px;
-            padding-right: 5px; 
+            padding-top: 5px;
+            padding-right: 2mm; 
 
-            /* FONT & WARNA */
+            /* Memicu penggantian font ke internal printer via Utility Epson */
             color: black !important;
             font-weight: normal !important; 
-            font-family: 'Courier New', Courier, monospace; 
+            font-family: Arial, Helvetica, 'FontA11', 'FontB11', 'Control', sans-serif !important; 
             font-size: 9pt;  
-            line-height: 1.1; 
+            line-height: 1.15; 
+            letter-spacing: 0px;
+        }
+
+        #receipt-area table, 
+        #receipt-area td, 
+        #receipt-area th, 
+        #receipt-area div,
+        #receipt-area span {
+            font-family: inherit !important;
         }
 
         /* 3. HEADER & INFO */
@@ -77,6 +85,7 @@
             padding: 1px 0; 
             text-align: right;
             vertical-align: top; 
+            font-size: 8pt;
         }
         .receipt-table td:first-child { text-align: left; }
         
@@ -99,13 +108,13 @@
         .sign-line {
             border-top: 1px solid #000; 
             width: 100%; 
-            margin: 25px auto 0 auto; 
+            margin: 55px auto 0 auto; 
         }
         
         .receipt-footer { 
             text-align: center; 
             margin-top: 10px; 
-            font-size: 7pt; 
+            font-size: 8pt; 
             font-style: italic;
         }
     </style>
@@ -118,7 +127,6 @@
             
             {{-- HEADER CABANG --}}
             <div class="receipt-header">
-                {{-- SAMA PERSIS SEPERTI INDEX --}}
                 <div class="receipt-title" style="font-weight: bold; font-size: 12pt;">BALI MONEY EXCHANGE</div>
                 <div class="receipt-title">{{ $transaction->branch->name ?? 'MONEY CHANGER' }}</div>
                 <div style="font-size: 8pt;">{{ $transaction->branch->address ?? 'Alamat Cabang' }}</div>
@@ -161,7 +169,7 @@
                         <td>{{ $transaction->customer_country }}</td>
                     </tr>
                     
-                    {{-- TYPE TRANSAKSI (AMBIL DARI ITEM PERTAMA) --}}
+                    {{-- TYPE TRANSAKSI --}}
                     <tr>
                         <td style="padding-top: 5px;">TYPE</td>
                         <td style="padding-top: 5px;">:</td>
@@ -185,7 +193,6 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {{-- LOOPING $transactions (DARI CONTROLLER BARU) --}}
                     @foreach($transactions as $item)
                     <tr>
                         <td>{{ $item->currency }}</td>
@@ -197,11 +204,10 @@
                 </tbody>
             </table>
 
-            {{-- TOTAL (MENGGUNAKAN SUM DARI COLLECTION) --}}
+            {{-- TOTAL --}}
             <div class="dashed-top">
-                <div style="display: flex; justify-content: space-between; font-size: 11pt;">
+                <div style="display: flex; justify-content: space-between; font-size: 9pt;">
                     <span>TOTAL IDR</span>
-                    {{-- HITUNG TOTAL OTOMATIS DARI KUMPULAN TRANSAKSI --}}
                     <span>Rp {{ number_format($transactions->sum('total_idr'), 0) }}</span>
                 </div>
                 <div style="font-size: 8pt; margin-top: 2px;">
@@ -217,14 +223,17 @@
                 </div>
 
                 <div class="sign-box">
-                    <div>Cashier</div> 
+                    <div>Customer Service</div> 
                     <div class="sign-line">{{ $transaction->user->name ?? 'Admin' }}</div>
                 </div>
             </div>
 
             {{-- FOOTER --}}
             <div class="receipt-footer">
-                "Transaksi dilakukan dibawah Threshold USD 25.000"
+                "This transaction was conducted below the threshold / equivalent to USD 10,000"
+            </div>
+            <div class="receipt-footer">
+                "Please recount your money before leaving the outlet/office. No complaints or claims regarding a shortfall will be entertained after leaving the counter."
             </div>
 
         </div>
@@ -233,7 +242,6 @@
     {{-- SCRIPT TUTUP TAB OTOMATIS SETELAH PRINT --}}
     <script>
         window.onafterprint = function() {
-            // Beri jeda sedikit sebelum menutup agar tidak crash
             setTimeout(function() { window.close(); }, 500);
         };
     </script>
