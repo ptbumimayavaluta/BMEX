@@ -269,7 +269,7 @@
     @if(session('success'))
         Swal.fire({
             title: 'BERHASIL!',
-            text: "{!! session('success') !!}",
+            text: @json(session('success')),
             icon: 'success',
             confirmButtonText: 'OK, SIAP',
             confirmButtonColor: '#0A2647',
@@ -281,7 +281,7 @@
     @if(session('error'))
         Swal.fire({
             title: 'GAGAL!',
-            text: "{!! session('error') !!}",
+            text: @json(session('error')),
             icon: 'error',
             confirmButtonText: 'Tutup',
             confirmButtonColor: '#EF4444',
@@ -289,14 +289,9 @@
     @endif
 
     @if($errors->any())
-        let errorMsg = '';
-        @foreach($errors->all() as $error)
-            errorMsg += '{{ $error }}\n';
-        @endforeach
-        
         Swal.fire({
             title: 'Perhatian',
-            text: errorMsg,
+            html: {!! json_encode(implode('<br>', $errors->all())) !!},
             icon: 'warning',
             confirmButtonText: 'Perbaiki',
             confirmButtonColor: '#F59E0B'
