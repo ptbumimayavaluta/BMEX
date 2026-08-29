@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB; 
 // --- IMPORT LIBRARY PDF ---
 use Smalot\PdfParser\Parser;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ComplianceController extends Controller
 {
@@ -44,86 +45,60 @@ class ComplianceController extends Controller
 
     public function dttotStore(Request $request)
     {
-        // [CONFIG KHUSUS] NAIKKAN LIMIT MEMORY & WAKTU KHUSUS UNTUK PROSES BERAT INI
-        ini_set('memory_limit', '1024M'); // 1GB (Aman untuk PDF besar)
-        ini_set('max_execution_time', '600'); // 10 Menit
+        ini_set('memory_limit', '512M');
+        ini_set('max_execution_time', '300');
 
         $request->validate([
-            'pdf_file' => 'required|mimes:pdf|max:20480', // Max 20MB
+            'excel_file' => 'required|mimes:xlsx,xls,csv|max:20480',
         ]);
 
         try {
-            // Cek Ketersediaan Library PDF Parser
-            if (!class_exists('Smalot\PdfParser\Parser')) {
-                return back()->with('error', 'Library smalot/pdfparser belum terinstall. Jalankan "composer require smalot/pdfparser" di terminal.');
-            }
+            $file = $request->file('excel_file');
+            $spreadsheet = IOFactory::load($file->getPathname());
+            $sheet = $spreadsheet->getActiveSheet();
+            $rows = $sheet->toArray(null, true, true, true);
 
-            $file = $request->file('pdf_file');
-            $parser = new Parser();
-            
-            // Parse File PDF
-            $pdf = $parser->parseFile($file->getPathname());
-            $text = $pdf->getText();
-            
-            // Bersihkan spasi ganda & newline
-            $text = preg_replace('/\s+/', ' ', $text);
-            
-            // POLA REGEX UTAMA (Mencari data yang diawali angka urut dan "Nama :")
-            // Contoh: "1. Nama : ABDULLAH..."
-            preg_match_all('/(\d+\.\s*Nama\s*:.*?)(?=\d+\.\s*Nama\s*:|$)/i', $text, $matches);
-            
-            $entries = $matches[0]; 
-            $count = 0;
+            // Ambil header baris ke-1 untuk pencocokan kolom
+            $header = array_shift($rows); 
 
-            foreach ($entries as $entry) {
-                // A. AMBIL NAMA (Wajib Ada)
-                preg_match('/Nama\s*:\s*(.*?)(?=\s*Nama alias|\s*Tempat|\s*Kewarganegaraan)/i', $entry, $mName);
-                $name = isset($mName[1]) ? substr(trim($mName[1]), 0, 250) : null;
+            $insertData = [];
+            $now = now();
 
-                if (!$name || strlen($name) < 3) continue; // Skip jika nama tidak valid
+            foreach ($rows as $row) {
+                $name = trim($row['A'] ?? ''); // Kolom Nama
+                if (empty($name) || $name === 'Nama') continue;
 
-                // B. AMBIL ALIAS (Opsional)
-                $aliasInfo = "";
-                preg_match('/Nama alias\s*:\s*(.*?)(?=\s*Tempat|\s*Kewarganegaraan)/i', $entry, $mAlias);
-                if (!empty($mAlias[1]) && trim($mAlias[1]) != '-') {
-                    $aliasInfo = "ALIAS: " . trim($mAlias[1]);
+                // Format tanggal lahir jika terbaca sebagai object/datetime
+                $rawDob = $row['F'] ?? null;
+                if ($rawDob instanceof \DateTime) {
+                    $rawDob = $rawDob->format('Y-m-d');
                 }
 
-                // C. INFO LAHIR (Opsional)
-                preg_match('/Tempat.*?Lahir\s*:\s*(.*?)(?=\s*Kewarganegaraan|\s*Alamat|\s*Keterangan)/i', $entry, $mBirth);
-                $birthInfo = isset($mBirth[1]) ? trim($mBirth[1]) : '-';
-
-                // D. ALAMAT (Opsional)
-                preg_match('/Alamat\s*:\s*(.*?)(?=\s*Keterangan|$)/i', $entry, $mAddress);
-                $address = isset($mAddress[1]) ? trim($mAddress[1]) : '-';
-
-                // E. KEWARGANEGARAAN (Opsional)
-                preg_match('/Kewarganegaraan\s*:\s*(.*?)(?=\s*Alamat|\s*Keterangan|$)/i', $entry, $mNation);
-                $nationality = isset($mNation[1]) ? trim($mNation[1]) : 'Indonesia';
-
-                $description = "Import PDF Otomatis. " . $aliasInfo;
-
-                // Simpan ke Database
-                DttotList::create([
-                    'name' => strtoupper($name),
-                    'birth_info' => $birthInfo,
-                    'address' => $address,
-                    'nationality' => $nationality,
-                    'description' => $description,
-                    'source_doc' => $file->getClientOriginalName()
-                ]);
-                
-                $count++;
+                $insertData[] = [
+                    'name'         => strtoupper($name),
+                    'description'  => $row['B'] ?? null,
+                    'entity_type'  => $row['C'] ?? 'Orang',
+                    'densus_code'  => $row['D'] ?? null,
+                    'birth_place'  => $row['E'] ?? null,
+                    'birth_date'   => $rawDob,
+                    'nationality'  => $row['G'] ?? null,
+                    'address'      => $row['H'] ?? null,
+                    'source_doc'   => $file->getClientOriginalName(),
+                    'created_at'   => $now,
+                    'updated_at'   => $now,
+                ];
             }
 
-            if ($count == 0) {
-                return back()->with('error', 'Gagal membaca pola data. Pastikan format PDF sesuai standar DTTOT Polri/PPATK.');
+            // Bulk insert batch 100 data agar sangat cepat
+            foreach (array_chunk($insertData, 100) as $chunk) {
+                DttotList::insert($chunk);
             }
 
-            return back()->with('success', "BERHASIL! {$count} Data Terduga Teroris telah ditambahkan ke database.");
+            $count = count($insertData);
+            return back()->with('success', "BERHASIL! {$count} Data DTTOT dari Excel berhasil dimasukkan ke database.");
 
         } catch (\Exception $e) {
-            return back()->with('error', 'Gagal Memproses PDF: ' . $e->getMessage());
+            return back()->with('error', 'Gagal Memproses Excel: ' . $e->getMessage());
         }
     }
 

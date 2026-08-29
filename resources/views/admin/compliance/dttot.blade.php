@@ -11,7 +11,7 @@
     <div class="bg-white p-4 shadow-sm border-b flex flex-wrap justify-between items-center rounded-xl mb-6 gap-4">
         <div class="flex items-center gap-3">
             <div class="bg-primary/10 p-2 rounded-lg text-primary">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 01-2-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
             </div>
             <div>
                 <h2 class="font-bold text-gray-800 text-lg">Database DTTOT</h2>
@@ -20,7 +20,7 @@
         </div>
         
         <div class="flex items-center gap-3">
-            {{-- TOMBOL BARU: MEMBUKA MODAL POP-UP (Tanpa Form Disini) --}}
+            {{-- TOMBOL MEMBUKA MODAL RESET --}}
             <button type="button" 
                     @click="truncateModalOpen = true" 
                     class="bg-red-100 text-red-600 px-4 py-2 rounded-lg text-xs font-bold border border-red-200 hover:bg-red-600 hover:text-white transition flex items-center gap-2 shadow-sm">
@@ -39,7 +39,7 @@
         </div>
     </div>
 
-    {{-- BAGIAN 1: UPDATE DATABASE (UPLOAD) --}}
+    {{-- BAGIAN 1: UPDATE DATABASE (UPLOAD EXCEL) --}}
     <div class="mb-8">
         <div class="bg-primary rounded-xl shadow-lg overflow-hidden relative">
             {{-- Decoration --}}
@@ -49,14 +49,14 @@
             
             <div class="p-6 flex flex-col md:flex-row items-center gap-6 relative z-10">
                 <div class="flex-1 text-white">
-                    <h3 class="font-bold text-secondary text-xl mb-2">Update Database DTTOT</h3>
+                    <h3 class="font-bold text-secondary text-xl mb-2">Update Database DTTOT (Excel)</h3>
                     <p class="text-sm text-blue-100 leading-relaxed mb-4">
-                        Upload file PDF resmi (Lampiran DTTOT) terbaru dari Kepolisian.<br>
+                        Upload file Excel resmi terbaru dari Mabes Polri (`.xlsx` / `.xls` / `.csv`).<br>
                         <span class="text-yellow-300 font-bold">Tips:</span> Sebaiknya tekan tombol <strong>"KOSONGKAN DATABASE"</strong> di atas terlebih dahulu sebelum mengupload data baru agar tidak terjadi duplikasi.
                     </p>
                     <div class="flex gap-2">
-                        <span class="text-[10px] bg-white/20 px-2 py-1 rounded text-white border border-white/20">Format: .PDF Only</span>
-                        <span class="text-[10px] bg-white/20 px-2 py-1 rounded text-white border border-white/20">Max: 10MB</span>
+                        <span class="text-[10px] bg-white/20 px-2 py-1 rounded text-white border border-white/20">Format: .XLSX / .XLS / .CSV</span>
+                        <span class="text-[10px] bg-white/20 px-2 py-1 rounded text-white border border-white/20">Max: 20MB</span>
                     </div>
                 </div>
 
@@ -64,18 +64,18 @@
                     <form action="{{ route('compliance.dttot.store') }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         <div class="relative group cursor-pointer mb-3">
-                            <input type="file" name="pdf_file" accept=".pdf" required 
+                            <input type="file" name="excel_file" accept=".xlsx, .xls, .csv" required 
                                    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
                                    onchange="document.getElementById('fileNameDisplay').innerText = this.files[0].name">
                             
                             <div class="bg-white border-2 border-dashed border-gray-300 rounded-lg p-4 text-center group-hover:border-secondary transition shadow-sm">
-                                <svg class="w-8 h-8 mx-auto text-gray-400 group-hover:text-secondary mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                                <p id="fileNameDisplay" class="text-sm font-bold text-gray-600 group-hover:text-secondary truncate">Klik untuk pilih PDF</p>
+                                <svg class="w-8 h-8 mx-auto text-green-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                <p id="fileNameDisplay" class="text-sm font-bold text-gray-600 group-hover:text-secondary truncate">Klik untuk pilih Excel (.xlsx)</p>
                             </div>
                         </div>
                         <button type="submit" class="w-full bg-secondary text-primary font-bold py-2.5 rounded-lg shadow-lg hover:bg-yellow-400 transition flex justify-center items-center gap-2 transform active:scale-[0.98]">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                            Mulai Scanning
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            Mulai Import Excel
                         </button>
                     </form>
                 </div>
@@ -83,7 +83,7 @@
         </div>
     </div>
 
-    {{-- BAGIAN 2: DAFTAR TERDUGA (TABEL) --}}
+    {{-- BAGIAN 2: DAFTAR TERDUGA (TABEL DATA EXCEL) --}}
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div class="bg-gray-50 px-6 py-4 border-b flex flex-wrap justify-between items-center gap-4">
             <div class="flex items-center gap-2">
@@ -91,7 +91,7 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                 </div>
                 <div>
-                    <h3 class="font-bold text-gray-800">Daftar Terduga (Hasil Scan)</h3>
+                    <h3 class="font-bold text-gray-800">Daftar Terduga DTTOT</h3>
                     <p class="text-xs text-gray-500">Total Data Tersimpan: <span class="font-bold text-primary">{{ $lists->total() }}</span></p>
                 </div>
             </div>
@@ -113,43 +113,63 @@
         </div>
         
         <div class="overflow-x-auto">
-            <table class="w-full text-sm text-left table-fixed">
+            <table class="w-full text-sm text-left border-collapse">
                 <thead class="bg-primary text-white text-xs uppercase">
                     <tr>
-                        <th class="p-4 border-b border-white/10 w-[5%] text-center">#</th>
-                        <th class="p-4 border-b border-white/10 w-[20%]">Nama Lengkap</th>
-                        <th class="p-4 border-b border-white/10 w-[20%]">Tempat & Tgl Lahir</th>
-                        <th class="p-4 border-b border-white/10">Keterangan / Alias</th>
-                        <th class="p-4 border-b border-white/10 w-[15%]">Sumber</th>
-                        <th class="p-4 border-b border-white/10 w-[10%] text-center">Hapus</th>
+                        <th class="p-3 text-center w-12">#</th>
+                        <th class="p-3 w-64">Nama & Alias</th>
+                        <th class="p-3 w-32">Kode / Tipe</th>
+                        <th class="p-3 w-48">Tempat & Tgl Lahir</th>
+                        <th class="p-3 w-32">Kewarganegaraan</th>
+                        <th class="p-3 w-64">Alamat & Deskripsi</th>
+                        <th class="p-3 text-center w-16">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                     @forelse($lists as $index => $item)
-                    <tr class="hover:bg-red-50 transition group align-top">
-                        <td class="p-4 text-gray-500 text-xs text-center font-mono">{{ $loop->iteration + ($lists->currentPage() - 1) * $lists->perPage() }}</td>
-                        <td class="p-4">
+                    <tr class="hover:bg-red-50 transition group align-top text-xs">
+                        <td class="p-3 text-gray-500 text-center font-mono">{{ $loop->iteration + ($lists->currentPage() - 1) * $lists->perPage() }}</td>
+                        
+                        {{-- Nama & Alias --}}
+                        <td class="p-3">
                             <span class="font-bold text-gray-900 text-sm block">{{ $item->name }}</span>
-                            <span class="text-[10px] text-white bg-red-600 px-1.5 py-0.5 rounded inline-block mt-1 font-bold tracking-wider">WANTED</span>
                         </td>
-                        <td class="p-4 text-gray-600 text-xs leading-relaxed">
-                            {!! nl2br(e($item->birth_info)) !!}
-                        </td>
-                        <td class="p-4 text-gray-600 text-xs leading-relaxed">
-                            <div class="max-h-24 overflow-y-auto pr-1 scrollbar-thin">
-                                {{ $item->description }}
-                            </div>
-                        </td>
-                        <td class="p-4">
-                            <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-[10px] border border-gray-300 block w-fit truncate max-w-[120px]" title="{{ $item->source_doc }}">
-                                {{ $item->source_doc }}
+
+                        {{-- Kode Densus & Terduga --}}
+                        <td class="p-3">
+                            <span class="font-mono bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200 font-bold inline-block mb-1">
+                                {{ $item->densus_code ?? '-' }}
                             </span>
-                            <div class="text-[10px] text-gray-400 mt-1">
-                                {{ \Carbon\Carbon::parse($item->created_at)->format('d/m/Y') }}
+                            <div>
+                                <span class="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase {{ $item->entity_type == 'Korporasi' ? 'bg-purple-100 text-purple-700' : 'bg-red-100 text-red-700' }}">
+                                    {{ $item->entity_type ?? 'Orang' }}
+                                </span>
                             </div>
                         </td>
-                        <td class="p-4 text-center">
-                            {{-- Hapus per item tetap pakai confirm biasa agar cepat --}}
+
+                        {{-- TTL --}}
+                        <td class="p-3 text-gray-600 leading-relaxed">
+                            <div><strong>Tempat:</strong> {{ $item->birth_place ?? '-' }}</div>
+                            <div><strong>Tgl Lahir:</strong> {{ $item->birth_date ?? '-' }}</div>
+                        </td>
+
+                        {{-- WN --}}
+                        <td class="p-3 text-gray-600">
+                            {{ $item->nationality ?? '-' }}
+                        </td>
+
+                        {{-- Alamat & Deskripsi --}}
+                        <td class="p-3 text-gray-600 leading-relaxed">
+                            @if($item->address)
+                                <div class="mb-1"><strong>Alamat:</strong> {{ Str::limit($item->address, 100) }}</div>
+                            @endif
+                            <div class="max-h-20 overflow-y-auto text-[11px] text-gray-500">
+                                {!! nl2br(e($item->description)) !!}
+                            </div>
+                        </td>
+
+                        {{-- Aksi Hapus --}}
+                        <td class="p-3 text-center">
                             <form action="{{ route('compliance.dttot.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Hapus satu data ini?');">
                                 @csrf
                                 @method('DELETE')
@@ -161,10 +181,10 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="p-12 text-center text-gray-400">
+                        <td colspan="7" class="p-12 text-center text-gray-400">
                             <div class="flex flex-col items-center justify-center py-8">
                                 <div class="bg-gray-100 p-4 rounded-full mb-3">
-                                    <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                    <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 01-2-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                                 </div>
 
                                 @if(request('search'))
@@ -179,7 +199,7 @@
                                 @else
                                     <p class="font-bold text-gray-500 text-lg">Database DTTOT Kosong</p>
                                     <p class="text-sm text-gray-400 mt-1 max-w-sm mx-auto">
-                                        Sistem aman bersih. Silakan upload file PDF baru jika ada update dari Mabes Polri.
+                                        Sistem aman bersih. Silakan upload file Excel baru jika ada update dari Mabes Polri.
                                     </p>
                                 @endif
                             </div>
@@ -195,9 +215,7 @@
         </div>
     </div>
 
-    {{-- ========================================== --}}
-    {{-- MODAL KONFIRMASI TRUNCATE (POP-UP KEREN)   --}}
-    {{-- ========================================== --}}
+    {{-- MODAL KONFIRMASI TRUNCATE (RESET) --}}
     <div x-show="truncateModalOpen" 
          class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
          style="display: none;"
@@ -232,7 +250,6 @@
                     Batal
                 </button>
                 
-                {{-- Form Submit Sesungguhnya --}}
                 <form action="{{ route('compliance.dttot.truncate') }}" method="POST" class="w-full">
                     @csrf @method('DELETE')
                     <button type="submit" class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none sm:text-sm font-bold transition transform active:scale-95">
@@ -245,11 +262,10 @@
 
 </div>
 
-{{-- SCRIPT TAMBAHAN UNTUK SWEETALERT --}}
+{{-- SCRIPT SWEETALERT --}}
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-    // 1. POP-UP SUKSES
     @if(session('success'))
         Swal.fire({
             title: 'BERHASIL!',
@@ -259,11 +275,9 @@
             confirmButtonColor: '#0A2647',
             width: '600px',
             padding: '2em',
-            backdrop: `rgba(0,0,123,0.4) left top no-repeat`
         });
     @endif
 
-    // 2. POP-UP ERROR
     @if(session('error'))
         Swal.fire({
             title: 'GAGAL!',
@@ -274,7 +288,6 @@
         });
     @endif
 
-    // 3. POP-UP VALIDASI
     @if($errors->any())
         let errorMsg = '';
         @foreach($errors->all() as $error)

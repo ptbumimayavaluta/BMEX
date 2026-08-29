@@ -343,12 +343,12 @@
         var form = document.getElementById('transactionForm');
         var overrideInput = document.getElementById('dttotOverrideInput');
         
-        // 1. Set flag override dttot menjadi 1
+        // 1. Set flag override dttot
         if (overrideInput) {
             overrideInput.value = '1';
         }
         
-        // 2. Bersihkan format ribuan titik/koma pada nominal valas
+        // 2. Bersihkan format angka valas
         var inputs = form.querySelectorAll('input[name*="amount_foreign"]');
         inputs.forEach(function(input) {
             if (typeof parseNumber === "function") {
@@ -358,10 +358,10 @@
             }
         });
 
-        // 3. Matikan validasi HTML native agar tidak muncul tooltip "Please fill in this field"
+        // 3. PENTING: Matikan validasi HTML browser agar tidak memblokir submit
         form.setAttribute('novalidate', 'novalidate');
 
-        // 4. Submit form
+        // 4. Submit form langsung
         form.submit();
     }
     </script>
@@ -410,7 +410,7 @@
                 <h3 class="font-bold text-gray-700 text-sm uppercase tracking-wide">Data Nasabah (KYC)</h3>
             </div>
 
-            <div class="p-0" x-data="{ custType: 'INDIVIDUAL', ...customerAutocomplete() }">
+            <div class="p-0" x-data="{ custType: '{{ old('customer_type', 'INDIVIDUAL') }}', ...customerAutocomplete() }">
                 
                 <table class="w-full text-sm text-left border-collapse">
                     {{-- BARIS 1: TIPE NASABAH --}}

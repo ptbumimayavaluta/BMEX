@@ -168,44 +168,30 @@ class TransactionController extends Controller
         // Cek apakah kasir menekan tombol "Berbeda (Lanjut Transaksi)"
         $isOverridden = $request->has('dttot_override') && $request->dttot_override == '1';
 
-        // JIKA KASIR SUDAH TEKAN "BERBEDA", LEWATI SELURUH CEK DTTOT & LANGSUNG PROSES SIMPAN
         if (!$isOverridden) {
             try {
-                $dttotMatches = DttotList::where('name', 'LIKE', '%' . $cleanName . '%')->get();
+                // Panggil Engine Pengecekan Pintar
+                $dttotCheck = $this->checkDttotMatch($cleanName, $inputDob, $inputNoId);
 
-                if ($dttotMatches->count() > 0) {
-                    $isExactMatch = false;
-                    $exactMatchData = null;
+                // A. BLOKIR TOTAL (Jika Nama SAMA & Tanggal Lahir / NIK Sama Persis)
+                if ($dttotCheck['is_block']) {
+                    return back()->with('dttot_block', [
+                        'name'   => $cleanName,
+                        'match'  => $dttotCheck['block_data']->name,
+                        'source' => $dttotCheck['block_data']->source_doc ?? 'Database PPATK / Polri'
+                    ])->withInput();
+                }
 
-                    foreach ($dttotMatches as $dttot) {
-                        // Cek jika ID atau Tanggal Lahir SAMA PERSIS
-                        $dobMatched = !empty($inputDob) && !empty($dttot->birth_info) && str_contains($dttot->birth_info, $inputDob);
-                        $idMatched  = !empty($inputNoId) && !empty($dttot->description) && str_contains(strtoupper($dttot->description), $inputNoId);
-
-                        if ($dobMatched || $idMatched) {
-                            $isExactMatch = true;
-                            $exactMatchData = $dttot;
-                            break;
-                        }
-                    }
-
-                    // A. NAMA SAMA + (TGL LAHIR / ID SAMA) -> BLOKIR TOTAL
-                    if ($isExactMatch) {
-                        return back()->with('dttot_block', [
-                            'name'   => $cleanName,
-                            'match'  => $exactMatchData->name,
-                            'source' => $exactMatchData->source_doc ?? 'Database PPATK / Polri'
-                        ])->withInput();
-                    }
-
-                    // B. HANYA NAMA YANG MIRIP (TGL LAHIR/ID BEDA) -> TAMPILKAN POPUP WARNING
+                // B. WARNING POPUP (Jika Kemiripan Nama >= 75% tapi belum pasti)
+                if ($dttotCheck['is_warning']) {
                     return back()->with('dttot_warning', [
                         'name'        => $cleanName,
-                        'matches'     => $dttotMatches,
+                        'matches'     => $dttotCheck['matches'],
                         'customer_dob'=> $inputDob ?? 'TIDAK DIISI',
                         'customer_id' => $inputNoId
                     ])->withInput();
                 }
+
             } catch (\Exception $e) {
                 \Log::error('DTTOT Check Error: ' . $e->getMessage());
             }
@@ -361,5 +347,92 @@ class TransactionController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         return redirect()->route('login')->with('success', 'Shift ditutup.');
+    }
+
+    /**
+     * [BARU] Helper Engine Pengecekan DTTOT Pintar
+     * Memecah alias, mengecek persentase kemiripan nama, dan cross-check tanggal lahir/ID.
+     */
+    private function checkDttotMatch(string $inputName, ?string $inputDob = null, ?string $inputNoId = null): array
+    {
+        $cleanInput = strtoupper(trim($inputName));
+
+        // 1. FILTER PANJANG KATA: Kata kurang dari 4 karakter (misal "BRI", "BCA", "ALI") LANGSUNG LOLOS
+        if (strlen($cleanInput) < 4) {
+            return [
+                'is_block' => false,
+                'is_warning' => false,
+                'matches' => collect([])
+            ];
+        }
+
+        // Ambil kata pertama nasabah untuk query awal di DB
+        $firstWord = explode(' ', $cleanInput)[0];
+        if (strlen($firstWord) < 3) {
+            $firstWord = $cleanInput;
+        }
+
+        // Cari kandidat DTTOT dari database
+        $candidates = DttotList::where('name', 'LIKE', "%{$firstWord}%")
+                                ->orWhere('description', 'LIKE', "%{$cleanInput}%")
+                                ->get();
+
+        if ($candidates->isEmpty()) {
+            return [
+                'is_block' => false,
+                'is_warning' => false,
+                'matches' => collect([])
+            ];
+        }
+
+        $warningMatches = collect();
+        $exactMatchData = null;
+        $isExactMatch = false;
+
+        foreach ($candidates as $dttot) {
+            // Pecah nama utama dan seluruh alias berdasarkan kata kunci " ALIAS "
+            $aliases = explode(' ALIAS ', strtoupper($dttot->name));
+
+            $maxSimilarity = 0;
+            foreach ($aliases as $alias) {
+                $alias = trim($alias);
+                if (empty($alias)) continue;
+
+                // Hitung persentase kemiripan nama (similar_text)
+                similar_text($cleanInput, $alias, $percent);
+                if ($percent > $maxSimilarity) {
+                    $maxSimilarity = $percent;
+                }
+            }
+
+            // A. CEK JIKA IDENTITAS SAMA PERSIS (MATCH NO. KTP/PASPOR ATAU TGL LAHIR)
+            $dobMatched = !empty($inputDob) && !empty($dttot->birth_date) && (strpos($dttot->birth_date, $inputDob) !== false);
+            $idMatched  = !empty($inputNoId) && !empty($dttot->description) && (strpos(strtoupper($dttot->description), $inputNoId) !== false);
+
+            if ($maxSimilarity >= 85 && ($dobMatched || $idMatched)) {
+                $isExactMatch = true;
+                $exactMatchData = $dttot;
+                break; // Jika sudah Blokir Total, stop pencarian
+            }
+
+            // B. JIKA NAMA KEMIRIPAN TINGGI (>= 75%) TAPI TANGGAL LAHIR / ID BEDA
+            if ($maxSimilarity >= 75) {
+                // Cross-check: Jika DTTOT punya tanggal lahir DAN Input Kasir punya tanggal lahir TAPI BEDA -> SKIP (False Positive)
+                if (!empty($dttot->birth_date) && !empty($inputDob)) {
+                    if (strpos($dttot->birth_date, $inputDob) === false && $dttot->birth_date != $inputDob) {
+                        continue; // Lewati, karena tanggal lahirnya terbukti beda
+                    }
+                }
+
+                $warningMatches->push($dttot);
+            }
+        }
+
+        return [
+            'is_block'   => $isExactMatch,
+            'block_data' => $exactMatchData,
+            'is_warning' => $warningMatches->count() > 0,
+            'matches'    => $warningMatches
+        ];
     }
 }

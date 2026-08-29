@@ -8,15 +8,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // 1. Tabel DTTOT (Daftar Terduga Teroris)
         Schema::create('dttot_lists', function (Blueprint $table) {
             $table->id();
-            $table->string('name'); // Nama Terduga
-            $table->text('birth_info')->nullable(); // Tempat Tgl Lahir
-            $table->text('address')->nullable(); // Alamat
-            $table->string('nationality')->nullable(); // Kebangsaan
-            $table->text('description')->nullable(); // Keterangan tambahan
-            $table->string('source_doc')->nullable(); // Nama File PDF Sumber
+            $table->string('densus_code')->nullable()->index(); // Kode Densus (Contoh: ILQ-308, IDD-032)
+            $table->string('entity_type')->default('Orang');    // Orang / Korporasi
+            $table->text('name');                               // Nama Lengkap + Alias
+            $table->text('birth_place')->nullable();            // Tempat Lahir
+            $table->string('birth_date')->nullable();           // Tanggal Lahir (String agar fleksibel)
+            $table->string('nationality')->nullable();          // WN/Asal Negara
+            $table->text('address')->nullable();                // Alamat
+            $table->text('description')->nullable();            // Deskripsi / NIK / No Paspor / Catatan
+            $table->string('source_doc')->nullable();           // Nama File Sumber Excel
             $table->timestamps();
         });
 
