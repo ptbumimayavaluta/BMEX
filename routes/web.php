@@ -178,7 +178,7 @@ Route::middleware(['auth'])->group(function () {
         // MODULE: APU-PPT
         Route::prefix('admin/compliance')->name('compliance.')->group(function() {
             Route::get('/dttot', [ComplianceController::class, 'dttotIndex'])->name('dttot.index');
-            Route::post('/dttot/import', [ComplianceController::class, 'dttotStore'])->name('dttot.store');
+            Route::post('/dttot/import', [ComplianceController::class, 'dttotStore'])->name('dttot.import');
             Route::delete('/dttot/truncate', [ComplianceController::class, 'dttotTruncate'])->name('dttot.truncate');
             Route::delete('/dttot/{id}', [ComplianceController::class, 'dttotDestroy'])->name('dttot.destroy');
             
