@@ -103,10 +103,10 @@
             }
             
             .sign-area {
-                margin-top: 15px; 
-                width: 100%;
-                font-size: 8pt;
-                clear: both;
+            margin-top: 15px; 
+            width: 100%;
+            font-size: 8pt;
+            clear: both;
             }
 
             .sign-box { 
@@ -389,7 +389,7 @@
                 <h3 class="font-bold text-gray-700 text-sm uppercase tracking-wide">Data Nasabah (KYC)</h3>
             </div>
 
-            <div class="p-0" x-data="customerAutocomplete()">
+            <div class="p-0" x-data="{ custType: 'INDIVIDUAL', ...customerAutocomplete() }">
                 
                 <table class="w-full text-sm text-left border-collapse">
                     {{-- BARIS 1: TIPE NASABAH --}}
@@ -442,7 +442,7 @@
                                    placeholder="KETIK NAMA UNTUK CARI..." required>
                             
                             {{-- Dropdown Autocomplete --}}
-                            <div x-show="open && filteredList.length > 0" class="absolute z-50 bg-white w-full max-w-lg border border-gray-200 rounded shadow-xl mt-1 max-h-40 overflow-y-auto" x-cloak>
+                            <div x-show="open && filteredList.length > 0" class="absolute z-50 bg-white w-full max-w-lg border border-gray-200 rounded shadow-xl mt-1 max-h-40 overflow-y-auto" style="display: none;">
                                 <ul>
                                     <template x-for="cust in filteredList" :key="cust.customer_identity_no">
                                         <li @click="selectCustomer(cust)" class="p-2 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0 transition">
@@ -769,15 +769,14 @@
         // --- [BARU] AUTOCOMPLETE LOGIC WITH AJAX FETCH ---
         function customerAutocomplete() {
             return {
-                custType: 'INDIVIDUAL', // <-- Masukkan custType ke dalam sini
                 search: '',
                 open: false,
                 filteredList: [],
                 formData: {
                     type: 'KTP', identity: '', address: '', job: '', country: '',
-                    gender: '', dob: '',
-                    pic_name: '', pic_id_type: 'KTP', pic_id_no: '',
-                    source: '', purpose: ''
+                    gender: '', dob: '', // Data Tambahan
+                    pic_name: '', pic_id_type: 'KTP', pic_id_no: '', // PIC
+                    source: '', purpose: '' // APU-PPT
                 },
                 // Fungsi Fetch API ke Server
                 async fetchCustomers() {
