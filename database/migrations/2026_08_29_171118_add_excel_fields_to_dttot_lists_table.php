@@ -9,6 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('dttot_lists', function (Blueprint $table) {
+            // TAMBAHKAN BARIS INI (Mengubah kolom 'name' menjadi TEXT)
+            $table->text('name')->nullable()->change();
+
             if (!Schema::hasColumn('dttot_lists', 'densus_code')) {
                 $table->string('densus_code')->nullable()->after('id');
             }
