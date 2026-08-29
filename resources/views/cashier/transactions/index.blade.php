@@ -340,7 +340,14 @@
 
     <script>
         function submitOverrideDttot() {
+            // Set flag override dttot menjadi 1
             document.getElementById('dttotOverrideInput').value = '1';
+            
+            // Bersihkan format titik/koma angka sebelum submit ulang
+            document.querySelectorAll('input[name*="amount_foreign"]').forEach(input => {
+                input.value = parseNumber(input.value); 
+            });
+
             document.getElementById('transactionForm').submit();
         }
     </script>
@@ -912,11 +919,34 @@
     </script>
     {{-- SCRIPT OTOMATIS PRINT SAAT TRANSAKSI BERHASIL --}}
     @if(session('transaction_success'))
+    <div id="printConfirmModal" class="fixed inset-0 z-[999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 text-center border-t-4 border-green-600">
+            <div class="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            <h3 class="text-base font-bold text-gray-800 mb-1">Transaksi Berhasil!</h3>
+            <p class="text-xs text-gray-500 mb-6">{{ session('transaction_success') }}</p>
+            
+            <div class="flex gap-2">
+                <button type="button" onclick="closePrintModal()" class="flex-1 py-2.5 rounded border border-gray-300 text-gray-700 text-xs font-bold hover:bg-gray-50 transition">
+                    BATAL / SELESAI
+                </button>
+                <button type="button" onclick="doPrint()" class="flex-1 py-2.5 rounded bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 shadow transition flex items-center justify-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                    PRINT STRUK
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            // Otomatis memicu perintah cetak browser setelah halaman selesai loading
+        function doPrint() {
             window.print();
-        });
+            closePrintModal();
+        }
+        function closePrintModal() {
+            document.getElementById('printConfirmModal').classList.add('hidden');
+        }
     </script>
     @endif
 @endsection
