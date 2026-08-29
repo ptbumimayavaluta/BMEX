@@ -161,15 +161,52 @@ class TransactionController extends Controller
         $request->validate($rules);
 
         // 2. CEK DTTOT (TERORIS)
-        $cleanName = strtoupper($request->customer_name);
+        $cleanName = strtoupper(trim($request->customer_name));
+        $inputDob  = $request->customer_dob; // Format: YYYY-MM-DD (jika diisi)
+        $inputNoId = strtoupper(trim($request->customer_identity_no));
+
         try {
-            $dttotMatch = DttotList::where('name', 'LIKE', '%'.$cleanName.'%')->first();
-            if ($dttotMatch) {
-                return back()->with('dttot_block', [
-                    'name' => $cleanName,
-                    'match' => $dttotMatch->name,
-                    'source' => $dttotMatch->source_doc ?? 'Database Pemerintah'
-                ])->withInput();
+            // Ambil semua kemungkinan kemiripan nama dari DB
+            $dttotMatches = DttotList::where('name', 'LIKE', '%' . $cleanName . '%')->get();
+
+            if ($dttotMatches->count() > 0) {
+                
+                // Cek apakah kasir melakukan "Bypass / Override" setelah memverifikasi KTP
+                $isOverridden = $request->has('dttot_override') && $request->dttot_override == '1';
+
+                if (!$isOverridden) {
+                    $isExactMatch = false;
+                    $exactMatchData = null;
+
+                    foreach ($dttotMatches as $dttot) {
+                        // Cek apakah ada kecocokan Tanggal Lahir atau Nomor ID di kolom keterangan DTTOT
+                        $dobMatched = !empty($inputDob) && !empty($dttot->birth_info) && str_contains($dttot->birth_info, $inputDob);
+                        $idMatched  = !empty($inputNoId) && !empty($dttot->description) && str_contains(strtoupper($dttot->description), $inputNoId);
+
+                        if ($dobMatched || $idMatched) {
+                            $isExactMatch = true;
+                            $exactMatchData = $dttot;
+                            break;
+                        }
+                    }
+
+                    // A. JIKA NAMA SAMA + (TGL LAHIR / ID SAMA) -> BLOKIR MUTLAK!
+                    if ($isExactMatch) {
+                        return back()->with('dttot_block', [
+                            'name'   => $cleanName,
+                            'match'  => $exactMatchData->name,
+                            'source' => $exactMatchData->source_doc ?? 'Database PPATK / Polri'
+                        ])->withInput();
+                    }
+
+                    // B. JIKA HANYA NAMA YANG MIRIP (TGL LAHIR/ID BEDA) -> POPUP WARNING DENGAN TOMBOL OVERRIDE
+                    return back()->with('dttot_warning', [
+                        'name'        => $cleanName,
+                        'matches'     => $dttotMatches,
+                        'customer_dob'=> $inputDob ?? 'TIDAK DIISI',
+                        'customer_id' => $inputNoId
+                    ])->withInput();
+                }
             }
         } catch (\Exception $e) { }
 

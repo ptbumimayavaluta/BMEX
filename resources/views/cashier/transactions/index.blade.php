@@ -104,12 +104,17 @@
             
             .sign-area {
                 margin-top: 15px; 
-                display: flex; 
-                justify-content: space-between; 
+                width: 100%;
                 font-size: 8pt;
+                clear: both;
             }
-            
-            .sign-box { text-align: center; width: 40%; }
+
+            .sign-box { 
+                text-align: center; 
+                width: 48%; 
+                display: inline-block;
+                vertical-align: top;
+            }
             
             .sign-line {
                 border-top: 1px solid #000; 
@@ -294,26 +299,51 @@
     @endif
 
     {{-- SUCCESS POPUP --}}
-    @if(session('success') || session('transaction_success'))
-    <div class="fixed inset-0 z-[50] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" id="successPopup">
-        <div class="bg-white rounded-lg shadow-2xl max-w-sm w-full p-6 text-center transform transition-all border-t-4 border-green-500">
-            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+    @if(session('dttot_warning'))
+    <div class="fixed inset-0 z-[999] bg-yellow-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden border-t-8 border-yellow-500 p-6 text-left">
+            <div class="flex items-center gap-3 text-yellow-600 mb-3">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                <h2 class="text-lg font-bold uppercase tracking-wide">Peringatan Kemiripan Nama!</h2>
             </div>
-            <h2 class="text-lg font-bold text-gray-800 mb-1">Transaksi Berhasil!</h2>
-            <p class="text-xs text-gray-500 mb-6">{{ session('success') ?? session('transaction_success') }}</p>
-            
-            <div class="flex flex-col gap-2">
-                <button onclick="window.print()" class="w-full bg-primary text-white font-bold py-2.5 rounded hover:opacity-90 transition shadow text-xs uppercase tracking-wide flex items-center justify-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                    CETAK NOTA
-                </button>
-                <button onclick="document.getElementById('successPopup').remove()" class="w-full bg-gray-100 text-gray-600 font-bold py-2.5 rounded hover:bg-gray-200 transition text-xs uppercase">
-                    Tutup
+
+            <p class="text-xs text-gray-600 mb-4">
+                Nama nasabah <b class="text-gray-900 uppercase">"{{ session('dttot_warning')['name'] }}"</b> memiliki kemiripan dengan daftar DTTOT, namun <b>Tanggal Lahir / No. ID tidak cocok</b>.
+            </p>
+
+            <div class="bg-gray-50 border border-gray-200 rounded p-3 text-xs mb-4 max-h-36 overflow-y-auto">
+                <span class="font-bold text-gray-700 block mb-1">Data Terkait di Database DTTOT:</span>
+                <ul class="list-disc pl-4 text-gray-600 space-y-1">
+                    @foreach(session('dttot_warning')['matches'] as $match)
+                        <li>
+                            <strong class="text-red-600">{{ $match->name }}</strong> 
+                            <br><span class="text-[10px] text-gray-500">{{ $match->birth_info ?? 'Info lahir tidak tersedia' }}</span>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+
+            <p class="text-xs font-bold text-red-600 mb-4">
+                ⚠️ Silakan periksa KTP/Paspor fisik nasabah! Apakah Anda yakin nasabah ini BUKAN orang yang ada di daftar DTTOT di atas?
+            </p>
+
+            <div class="flex gap-2">
+                <a href="{{ route('transaction.index') }}" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2.5 rounded text-xs text-center transition">
+                    BATALKAN
+                </a>
+                <button type="button" onclick="submitOverrideDttot()" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded text-xs shadow transition">
+                    BERBEDA (LANJUT TRANSAKSI)
                 </button>
             </div>
         </div>
     </div>
+
+    <script>
+        function submitOverrideDttot() {
+            document.getElementById('dttotOverrideInput').value = '1';
+            document.getElementById('transactionForm').submit();
+        }
+    </script>
     @endif
 
     {{-- ================================================================= --}}
@@ -347,8 +377,10 @@
 
     {{-- FORMULIR UTAMA --}}
     <form action="{{ route('transaction.store') }}" method="POST" id="transactionForm" class="no-print">
-        @csrf
-        <input type="hidden" name="transaction_date" id="hiddenDate" value="{{ date('Y-m-d') }}">
+    @csrf
+    {{-- BARU: Input untuk menandai jika kasir sudah verifikasi KTP --}}
+    <input type="hidden" name="dttot_override" id="dttotOverrideInput" value="0">
+    <input type="hidden" name="transaction_date" id="hiddenDate" value="{{ date('Y-m-d') }}">
         
         {{-- CARD 1: DATA NASABAH (STEP 1) --}}
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 overflow-hidden">
@@ -357,7 +389,7 @@
                 <h3 class="font-bold text-gray-700 text-sm uppercase tracking-wide">Data Nasabah (KYC)</h3>
             </div>
 
-            <div class="p-0" x-data="{ custType: 'INDIVIDUAL', ...customerAutocomplete() }">
+            <div class="p-0" x-data="customerAutocomplete()">
                 
                 <table class="w-full text-sm text-left border-collapse">
                     {{-- BARIS 1: TIPE NASABAH --}}
@@ -410,7 +442,7 @@
                                    placeholder="KETIK NAMA UNTUK CARI..." required>
                             
                             {{-- Dropdown Autocomplete --}}
-                            <div x-show="open && filteredList.length > 0" class="absolute z-50 bg-white w-full max-w-lg border border-gray-200 rounded shadow-xl mt-1 max-h-40 overflow-y-auto" style="display: none;">
+                            <div x-show="open && filteredList.length > 0" class="absolute z-50 bg-white w-full max-w-lg border border-gray-200 rounded shadow-xl mt-1 max-h-40 overflow-y-auto" x-cloak>
                                 <ul>
                                     <template x-for="cust in filteredList" :key="cust.customer_identity_no">
                                         <li @click="selectCustomer(cust)" class="p-2 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0 transition">
@@ -737,14 +769,15 @@
         // --- [BARU] AUTOCOMPLETE LOGIC WITH AJAX FETCH ---
         function customerAutocomplete() {
             return {
+                custType: 'INDIVIDUAL', // <-- Masukkan custType ke dalam sini
                 search: '',
                 open: false,
                 filteredList: [],
                 formData: {
                     type: 'KTP', identity: '', address: '', job: '', country: '',
-                    gender: '', dob: '', // Data Tambahan
-                    pic_name: '', pic_id_type: 'KTP', pic_id_no: '', // PIC
-                    source: '', purpose: '' // APU-PPT
+                    gender: '', dob: '',
+                    pic_name: '', pic_id_type: 'KTP', pic_id_no: '',
+                    source: '', purpose: ''
                 },
                 // Fungsi Fetch API ke Server
                 async fetchCustomers() {
@@ -878,4 +911,13 @@
             });
         });
     </script>
+    {{-- SCRIPT OTOMATIS PRINT SAAT TRANSAKSI BERHASIL --}}
+    @if(session('transaction_success'))
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Otomatis memicu perintah cetak browser setelah halaman selesai loading
+            window.print();
+        });
+    </script>
+    @endif
 @endsection
