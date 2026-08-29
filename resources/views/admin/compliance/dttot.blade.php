@@ -61,7 +61,7 @@
                 </div>
 
                 <div class="w-full md:w-1/3 bg-white/5 p-4 rounded-lg border border-white/10 backdrop-blur-sm">
-                    <form action="{{ route('compliance.dttot.store') }}" method="POST" enctype="multipart/form-data">
+                    <form action="{{ route('compliance.dttot.import') }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         <div class="relative group cursor-pointer mb-3">
                             <input type="file" name="excel_file" accept=".xlsx, .xls, .csv" required 
