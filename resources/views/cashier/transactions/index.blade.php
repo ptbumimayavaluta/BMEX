@@ -340,15 +340,21 @@
 
     <script>
         function submitOverrideDttot() {
-            // Set flag override dttot menjadi 1
-            document.getElementById('dttotOverrideInput').value = '1';
+            // 1. Ubah nilai override menjadi 1
+            let overrideInput = document.getElementById('dttotOverrideInput');
+            if (overrideInput) {
+                overrideInput.value = '1';
+            }
             
-            // Bersihkan format titik/koma angka sebelum submit ulang
-            document.querySelectorAll('input[name*="amount_foreign"]').forEach(input => {
+            // 2. Wajib bersihkan format ribuan di semua input amount_foreign agar lolos validasi numeric
+            let form = document.getElementById('transactionForm');
+            let inputs = form.querySelectorAll('input[name*="amount_foreign"]');
+            inputs.forEach(input => {
                 input.value = parseNumber(input.value); 
             });
 
-            document.getElementById('transactionForm').submit();
+            // 3. Submit form transaksi
+            form.submit();
         }
     </script>
     @endif
@@ -775,16 +781,24 @@
 
         // --- [BARU] AUTOCOMPLETE LOGIC WITH AJAX FETCH ---
         function customerAutocomplete() {
-            return {
-                search: '',
-                open: false,
-                filteredList: [],
-                formData: {
-                    type: 'KTP', identity: '', address: '', job: '', country: '',
-                    gender: '', dob: '', // Data Tambahan
-                    pic_name: '', pic_id_type: 'KTP', pic_id_no: '', // PIC
-                    source: '', purpose: '' // APU-PPT
-                },
+        return {
+            search: '{{ old("customer_name") }}',
+            open: false,
+            filteredList: [],
+            formData: {
+                type: '{{ old("customer_id_type", "KTP") }}', 
+                identity: '{{ old("customer_identity_no") }}', 
+                address: '{{ old("customer_address") }}', 
+                job: '{{ old("customer_job") }}', 
+                country: '{{ old("customer_country") }}',
+                gender: '{{ old("customer_gender") }}', 
+                dob: '{{ old("customer_dob") }}',
+                pic_name: '{{ old("representative_name") }}', 
+                pic_id_type: '{{ old("representative_id_type", "KTP") }}', 
+                pic_id_no: '{{ old("representative_id_no") }}',
+                source: '{{ old("source_of_funds") }}', 
+                purpose: '{{ old("transaction_purpose") }}'
+            },
                 // Fungsi Fetch API ke Server
                 async fetchCustomers() {
                     if (this.search.length < 2) { 
