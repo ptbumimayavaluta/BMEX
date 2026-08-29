@@ -954,12 +954,31 @@
     </div>
 
     <script>
-        function doPrint() {
-            window.print();
-            closePrintModal();
-        }
-        function closePrintModal() {
-            document.getElementById('printConfirmModal').classList.add('hidden');
+        function submitOverrideDttot() {
+            var form = document.getElementById('transactionForm');
+            var overrideInput = document.getElementById('dttotOverrideInput');
+            
+            if (overrideInput) {
+                // 1. Set flag override dttot menjadi 1
+                overrideInput.value = '1';
+            }
+            
+            // 2. Bersihkan format ribuan titik/koma secara manual di semua baris valas
+            var inputs = form.querySelectorAll('input[name*="amount_foreign"]');
+            inputs.forEach(function(input) {
+                if (typeof parseNumber === "function") {
+                    input.value = parseNumber(input.value); 
+                } else {
+                    input.value = input.value.replace(/\./g, '').replace(/,/g, '.');
+                }
+            });
+
+            // 3. Gunakan requestSubmit() agar menembus listener validasi form
+            if (typeof form.requestSubmit === 'function') {
+                form.requestSubmit();
+            } else {
+                form.submit();
+            }
         }
     </script>
     @endif
