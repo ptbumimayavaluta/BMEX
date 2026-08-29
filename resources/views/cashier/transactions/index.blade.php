@@ -340,28 +340,30 @@
 
     <script>
         function submitOverrideDttot() {
-            var form = document.getElementById('transactionForm');
-            var overrideInput = document.getElementById('dttotOverrideInput');
-            
-            if (overrideInput) {
-                overrideInput.value = '1';
-            }
-            
-            var inputs = form.querySelectorAll('input[name*="amount_foreign"]');
-            inputs.forEach(function(input) {
-                if (typeof parseNumber === "function") {
-                    input.value = parseNumber(input.value); 
-                } else {
-                    input.value = input.value.replace(/\./g, '').replace(/,/g, '.');
-                }
-            });
-
-            if (typeof form.requestSubmit === 'function') {
-                form.requestSubmit();
-            } else {
-                form.submit();
-            }
+        var form = document.getElementById('transactionForm');
+        var overrideInput = document.getElementById('dttotOverrideInput');
+        
+        // 1. Set flag override dttot menjadi 1
+        if (overrideInput) {
+            overrideInput.value = '1';
         }
+        
+        // 2. Bersihkan format ribuan titik/koma pada nominal valas
+        var inputs = form.querySelectorAll('input[name*="amount_foreign"]');
+        inputs.forEach(function(input) {
+            if (typeof parseNumber === "function") {
+                input.value = parseNumber(input.value); 
+            } else {
+                input.value = input.value.replace(/\./g, '').replace(/,/g, '.');
+            }
+        });
+
+        // 3. Matikan validasi HTML native agar tidak muncul tooltip "Please fill in this field"
+        form.setAttribute('novalidate', 'novalidate');
+
+        // 4. Submit form
+        form.submit();
+    }
     </script>
     @endif
 
@@ -675,17 +677,17 @@
                     <tbody id="tableBody" class="divide-y divide-gray-100">
                         <tr class="bg-white group hover:bg-gray-50 transition">
                             
-                            {{-- [UPDATE] INPUT HIDDEN UNTUK TIPE --}}
+                            {{-- INPUT HIDDEN UNTUK TIPE --}}
                             <input type="hidden" name="items[0][type]" class="item-type" value="buy">
 
                             <td class="p-2 align-top">
-                                <input list="currencyOptions" name="items[0][currency_code]" class="w-full p-2 border border-gray-300 rounded font-bold text-gray-800 uppercase text-xs focus:border-primary focus:ring-primary outline-none h-9" placeholder="KODE" required>
+                                <input list="currencyOptions" name="items[0][currency_code]" value="{{ old('items.0.currency_code') }}" class="w-full p-2 border border-gray-300 rounded font-bold text-gray-800 uppercase text-xs focus:border-primary focus:ring-primary outline-none h-9" placeholder="KODE" required>
                             </td>
                             <td class="p-2 align-top">
-                                <input type="text" inputmode="numeric" name="items[0][amount_foreign]" placeholder="0" class="w-full p-2 border border-gray-300 rounded text-right font-mono text-xs font-bold focus:border-primary focus:ring-primary outline-none h-9" onkeyup="formatNumber(this)" required>
+                                <input type="text" inputmode="numeric" name="items[0][amount_foreign]" value="{{ old('items.0.amount_foreign') }}" placeholder="0" class="w-full p-2 border border-gray-300 rounded text-right font-mono text-xs font-bold focus:border-primary focus:ring-primary outline-none h-9" onkeyup="formatNumber(this)" required>
                             </td>
                             <td class="p-2 align-top">
-                                <input type="number" step="any" name="items[0][rate]" placeholder="0" class="w-full p-2 border border-gray-300 rounded text-right font-mono text-xs focus:border-primary focus:ring-primary outline-none h-9" oninput="calculateRow(this)" required>
+                                <input type="number" step="any" name="items[0][rate]" value="{{ old('items.0.rate') }}" placeholder="0" class="w-full p-2 border border-gray-300 rounded text-right font-mono text-xs focus:border-primary focus:ring-primary outline-none h-9" oninput="calculateRow(this)" required>
                             </td>
                             <td class="p-2 align-top">
                                 <input type="text" readonly class="w-full bg-gray-50 border border-gray-200 rounded text-right font-bold text-gray-900 total-display text-xs px-2 py-2 font-mono outline-none h-9" value="0">
@@ -929,6 +931,14 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            // Hitung ulang kalkulasi baris & grand total jika ada data old() dari reload
+            document.querySelectorAll('#tableBody tr').forEach(row => {
+                let amountInput = row.querySelector('input[name*="[amount_foreign]"]');
+                if (amountInput && amountInput.value) {
+                    formatNumber(amountInput);
+                }
+            });
+
             document.getElementById('transactionForm').addEventListener('submit', function(e) {
                 let inputs = this.querySelectorAll('input[name*="amount_foreign"]');
                 inputs.forEach(input => {
@@ -958,5 +968,20 @@
             </div>
         </div>
     </div>
+
+    {{-- TAMBAHKAN SCRIPT INI --}}
+    <script>
+        function closePrintModal() {
+            var modal = document.getElementById('printConfirmModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        function doPrint() {
+            window.print();
+            closePrintModal();
+        }
+    </script>
     @endif
 @endsection
