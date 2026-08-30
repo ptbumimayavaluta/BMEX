@@ -1,7 +1,29 @@
 @extends('layouts.app')
 
-@section('content')
-<div class="flex flex-col min-h-screen pb-20"> 
+    @section('content')
+    <div class="flex flex-col min-h-screen pb-20"> 
+        
+        {{-- FORM PENGATURAN KURS THRESHOLD APU-PPT (Admin/Owner) --}}
+        @if(Auth::user()->role == 'admin' || Auth::user()->role == 'owner')
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 shadow-sm">
+            <form action="{{ route('nasabah.kyc.threshold-rate') }}" method="POST" class="flex flex-col md:flex-row items-center justify-between gap-4">
+                @csrf
+                <div class="flex items-center gap-3">
+                    <div>
+                        <h4 class="font-bold text-blue-900 text-xs uppercase tracking-wider">Pengaturan Kurs Acuan Threshold APU-PPT (USD 10.000)</h4>
+                        <p class="text-xs text-blue-700 mt-0.5">
+                            Batas IDR Saat Ini: <b class="text-gray-900">Rp {{ number_format($dynamicLimitIDR ?? 150000000, 0, ',', '.') }}</b> 
+                            <span class="text-[10px] text-gray-500">(Rate: Rp {{ number_format($usdRate ?? 15000, 0, ',', '.') }}/USD)</span>
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 w-full md:w-auto">
+                    <input type="number" step="any" name="threshold_usd_rate" value="{{ $usdRate ?? 15000 }}" class="border-gray-300 rounded-lg p-2 text-xs font-bold w-full md:w-44 bg-white shadow-sm" required>
+                    <button type="submit" class="bg-primary text-white px-4 py-2 rounded-lg text-xs font-bold">SIMPAN RATE</button>
+                </div>
+            </form>
+        </div>
+        @endif
     
     {{-- HEADER & FILTER SECTION (Gaya Mutasi Harian) --}}
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">

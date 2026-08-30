@@ -64,6 +64,7 @@ Route::middleware(['auth'])->group(function () {
     // 1. Data Nasabah
     Route::get('/nasabah/data', [MenuController::class, 'nasabah'])->name('nasabah.index');
     Route::get('/nasabah/kyc', [MenuController::class, 'kyc'])->name('nasabah.kyc');
+    Route::post('/nasabah/kyc/threshold-rate', [MenuController::class, 'updateThresholdRate'])->name('nasabah.kyc.threshold-rate');
     Route::get('/nasabah/assessment', [AssessmentController::class, 'index'])->name('nasabah.assessment');
     Route::get('/nasabah/edit/{id}', [MenuController::class, 'edit'])->name('nasabah.edit');
     Route::put('/nasabah/update/{id}', [MenuController::class, 'update'])->name('nasabah.update');

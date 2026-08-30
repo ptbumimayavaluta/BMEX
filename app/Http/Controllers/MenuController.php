@@ -383,15 +383,16 @@ class MenuController extends Controller
                     ->orderByDesc('total_volume') 
                     ->get();
 
-        // 6. Analisis Risiko (Threshold Harian)
-        $kycData->map(function ($row) {
+        // 6. Analisis Risiko (Threshold Dinamis Berdasarkan USD 10.000)
+        $usdRate = self::getThresholdRate();
+        $dynamicLimitIDR = 10000 * $usdRate;
+
+        $kycData->map(function ($row) use ($dynamicLimitIDR) {
             $riskLevel = 'LOW'; $riskColor = 'green'; $action = 'Wajar';
             
-            // Logika Risiko (Bisa disesuaikan kebijakannya)
-            // Misal: Transaksi > 100 Juta per HARI = HIGH RISK
-            if ($row->total_volume >= 100000000 || $row->freq >= 5) {
+            if ($row->total_volume >= $dynamicLimitIDR || $row->freq >= 5) {
                 $riskLevel = 'HIGH'; $riskColor = 'red'; $action = 'Wajib Lapor LTKT';
-            } elseif ($row->total_volume >= 50000000 || $row->freq >= 3) {
+            } elseif ($row->total_volume >= ($dynamicLimitIDR * 0.5) || $row->freq >= 3) {
                 $riskLevel = 'MEDIUM'; $riskColor = 'yellow'; $action = 'Pantau Dokumen';
             }
             
@@ -401,7 +402,7 @@ class MenuController extends Controller
             return $row;
         });
 
-        return view('admin.customers.kyc', compact('date', 'branchId', 'branches', 'kycData'));
+        return view('admin.customers.kyc', compact('date', 'branchId', 'branches', 'kycData', 'usdRate', 'dynamicLimitIDR'));
     }
 
     /**
@@ -423,5 +424,29 @@ class MenuController extends Controller
 
 
         return view('admin.customers.print_struk', compact('transaction', 'transactions'));
+    }
+    
+    public static function getThresholdRate()
+    {
+        $setting = DB::table('settings')->where('key', 'threshold_usd_rate')->first();
+        return $setting ? (float)$setting->value : 15000;
+    }
+
+    public function updateThresholdRate(Request $request)
+    {
+        if (!in_array(Auth::user()->role, ['admin', 'owner'])) {
+            return back()->with('error', 'Akses Ditolak.');
+        }
+
+        $request->validate([
+            'threshold_usd_rate' => 'required|numeric|min:1000'
+        ]);
+
+        DB::table('settings')->updateOrInsert(
+            ['key' => 'threshold_usd_rate'],
+            ['value' => $request->threshold_usd_rate, 'updated_at' => now()]
+        );
+
+        return back()->with('success', 'Kurs acuan threshold APU-PPT berhasil diperbarui.');
     }
 }
