@@ -402,7 +402,6 @@ class TransactionController extends Controller
             ];
         }
 
-        $warningMatches = collect();
         $exactMatchData = null;
         $isExactMatch = false;
 
@@ -423,24 +422,30 @@ class TransactionController extends Controller
             // Jika kemiripan nama di bawah 85%, abaikan
             if ($maxSimilarity < 85) continue;
 
-            // Cek kecocokan data pendukung (ID & Tanggal Lahir)
-            $dobMatched = !empty($inputDob) && !empty($dttot->birth_date) && (strpos($dttot->birth_date, $inputDob) !== false || $dttot->birth_date == $inputDob);
-            $idMatched  = !empty($inputNoId) && !empty($dttot->description) && (strpos(strtoupper($dttot->description), strtoupper($inputNoId)) !== false);
+            // Cek apakah data di database DTTOT memiliki info pendukung
+            $hasDttotDob = !empty($dttot->birth_date);
+            $hasDttotId  = !empty($dttot->description);
 
-            // =========================================================================
-            // ATURAN UTAMA:
-            // Blokir Merah HANYA JIKA Nama Mirip (>=85%) DAN (ID Cocok ATAU Tanggal Lahir Cocok).
-            // Jika salah satu atau keduanya berbeda, sistem menganggap ini orang yang berbeda.
-            // =========================================================================
-            if ($dobMatched || $idMatched) {
+            $dobMatched = $hasDttotDob && !empty($inputDob) && (strpos($dttot->birth_date, $inputDob) !== false || $dttot->birth_date == $inputDob);
+            $idMatched  = $hasDttotId && !empty($inputNoId) && (strpos(strtoupper($dttot->description), strtoupper($inputNoId)) !== false);
+
+            // KONDISI 1: Jika database DTTOT HANYA PUNYA NAMA (tidak ada DOB/ID), dan nama sangat mirip (>=95%), TETAP BLOKIR!
+            if ($maxSimilarity >= 95 && (!$hasDttotDob && !$hasDttotId)) {
                 $isExactMatch = true;
                 $exactMatchData = $dttot;
                 break; 
             }
 
-            // Jika Tanggal Lahir yang diinput kasir BERBEDA dengan database DTTOT, 
-            //abaikan secara mutlak (biarkan transaksi jalan terus tanpa hambatan)
-            if (!empty($dttot->birth_date) && !empty($inputDob) && !$dobMatched) {
+            // KONDISI 2: Jika data pendukung lengkap dan klop (ID atau Tanggal Lahir cocok)
+            if ($maxSimilarity >= 85 && ($dobMatched || $idMatched)) {
+                $isExactMatch = true;
+                $exactMatchData = $dttot;
+                break; 
+            }
+
+            // KONDISI 3: PENGAMANAN FALSE POSITIVE (Nasabah biasa)
+            // Jika DTTOT punya tanggal lahir, dan input kasir mengisi tanggal lahir, tapi TERBUKTI BERBEDA -> Lewati (Jangan blokir)
+            if ($hasDttotDob && !empty($inputDob) && !$dobMatched) {
                 continue; 
             }
         }
@@ -448,8 +453,8 @@ class TransactionController extends Controller
         return [
             'is_block'   => $isExactMatch,
             'block_data' => $exactMatchData,
-            'is_warning' => false, // Set false agar tidak memunculkan peringatan mengganggu jika hanya nama doang yang mirip
-            'matches'    => $warningMatches
+            'is_warning' => false,
+            'matches'    => collect([])
         ];
     }
 }
