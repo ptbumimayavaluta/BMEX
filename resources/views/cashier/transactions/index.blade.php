@@ -1035,22 +1035,25 @@
                         let idNo = idInput ? idInput.value.trim() : '';
 
                         if (idNo.length >= 3) {
-                            // Tampilkan loading (Sekarang tidak akan error karena SweetAlert sudah ditambahkan)
+                            // Tampilkan loading dengan teks profesional
                             Swal.fire({
                                 title: 'Memproses Transaksi...',
-                                text: 'Mengecek histori batas APU-PPT nasabah',
+                                text: 'Menjalankan pemeriksaan regulasi APU-PPT & DTTOT',
                                 allowOutsideClick: false,
-                                didOpen: () => { Swal.showLoading(); }
+                                didOpen: () => { 
+                                    Swal.showLoading(); 
+                                }
                             });
 
-                            // Pengecekan real-time mutlak ke database (Menggunakan Base URL yang aman)
+                            // Berikan jeda waktu minimum 1.5 detik (1500 ms) agar animasi loading sempat terlihat nyaman oleh kasir
+                            await new Promise(resolve => setTimeout(resolve, 1500));
+
                             let fetchUrl = `{{ url('/compliance-check/threshold') }}/${encodeURIComponent(idNo)}?amount=${currentTotalAmount}`;
                             let response = await fetch(fetchUrl);
                             
                             if (response.ok) {
                                 let res = await response.json();
                                 
-                                // Jika benar-benar MELEBIHI threshold, langsung tolak di tempat!
                                 if (res.status === 'success' && res.data.is_exceeded) {
                                     Swal.fire({
                                         title: 'TRANSAKSI DITOLAK!',
@@ -1059,17 +1062,15 @@
                                                 <p class="text-red-600 font-bold text-sm">⚠️ Nasabah ini telah melampaui batas transaksi USD 10.000 di bulan ini!</p>
                                                 <hr>
                                                 <p>Total Akumulasi: <b class="text-red-600">Rp ${new Intl.NumberFormat('id-ID').format(res.data.projected_total)}</b></p>
-                                                <p class="mt-2 text-gray-500 italic">*Silakan arahkan nasabah untuk melakukan transaksi di bulan berikutnya.</p>
                                             </div>
                                         `,
                                         icon: 'error',
                                         confirmButtonText: 'KEMBALI',
                                         confirmButtonColor: '#DC2626'
                                     });
-                                    return false; // PROSES DIBATALKAN DISINI
+                                    return false; 
                                 }
                             } else {
-                                // Jika server merespon dengan HTML Error (500)
                                 Swal.fire('Error Server!', 'Terjadi kesalahan pada Controller. Cek Laravel Log.', 'error');
                                 return false;
                             }
@@ -1080,7 +1081,7 @@
                         return false;
                     }
 
-                    // TAHAP AKHIR: JIKA AMAN (LOLOS THRESHOLD)
+                    // TAHAP AKHIR: JIKA AMAN
                     let inputs = form.querySelectorAll('input[name*="amount_foreign"]');
                     inputs.forEach(input => {
                         input.value = parseNumber(input.value); 
