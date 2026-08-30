@@ -373,7 +373,8 @@ class TransactionController extends Controller
      */
     private function checkDttotMatch(string $inputName, ?string $inputDob = null, ?string $inputNoId = null): array
     {
-        $cleanInput = strtoupper(trim($inputName));
+        // Normalisasi input kasir (hapus spasi berlebih)
+        $cleanInput = strtoupper(preg_replace('/\s+/', ' ', trim($inputName)));
 
         // 1. Kata kurang dari 4 karakter langsung lolos
         if (strlen($cleanInput) < 4) {
@@ -389,9 +390,9 @@ class TransactionController extends Controller
             $firstWord = $cleanInput;
         }
 
-        // Cari kandidat DTTOT dari database
+        // Cari kandidat di database
         $candidates = DttotList::where('name', 'LIKE', "%{$firstWord}%")
-                                ->orWhere('description', 'LIKE', "%{$cleanInput}%")
+                                ->orWhere('description', 'LIKE', "%{$firstWord}%")
                                 ->get();
 
         if ($candidates->isEmpty()) {
@@ -407,44 +408,42 @@ class TransactionController extends Controller
         $isExactMatch = false;
 
         foreach ($candidates as $dttot) {
-            $aliases = explode(' ALIAS ', strtoupper($dttot->name));
+            // Gabungkan dan bersihkan seluruh record dari enter/newline dan spasi ganda
+            $rawRecord = $dttot->name . ' ' . ($dttot->description ?? '') . ' ' . ($dttot->birth_date ?? '');
+            $fullRecordText = strtoupper(preg_replace('/\s+/', ' ', $rawRecord));
 
-            $maxSimilarity = 0;
-            foreach ($aliases as $alias) {
-                $alias = trim($alias);
-                if (empty($alias)) continue;
+            // 1. Cek apakah Nama lengkap kasir ada di dalam teks record DTTOT
+            $nameMatched = str_contains($fullRecordText, $cleanInput);
 
-                similar_text($cleanInput, $alias, $percent);
-                if ($percent > $maxSimilarity) {
-                    $maxSimilarity = $percent;
+            // 2. Cek apakah Nomor ID (KTP/Paspor) cocok
+            $idMatched = false;
+            if (!empty($inputNoId) && strlen(trim($inputNoId)) >= 4) {
+                $cleanInputId = preg_replace('/[^A-Z0-9]/', '', strtoupper($inputNoId));
+                $cleanRecordText = preg_replace('/[^A-Z0-9]/', '', $fullRecordText);
+                if (str_contains($cleanRecordText, $cleanInputId)) {
+                    $idMatched = true;
                 }
             }
 
-            // Jika kemiripan nama di bawah 85%, abaikan
-            if ($maxSimilarity < 85) continue;
+            // 3. Cek apakah Tanggal Lahir cocok
+            $dobMatched = false;
+            if (!empty($inputDob)) {
+                if (str_contains($fullRecordText, $inputDob)) {
+                    $dobMatched = true;
+                }
+            }
 
-            $hasDttotDob = !empty($dttot->birth_date);
-            $hasDttotId  = !empty($dttot->description);
-
-            $dobMatched = $hasDttotDob && !empty($inputDob) && (strpos($dttot->birth_date, $inputDob) !== false || $dttot->birth_date == $inputDob);
-            $idMatched  = $hasDttotId && !empty($inputNoId) && (strpos(strtoupper($dttot->description), strtoupper($inputNoId)) !== false);
-
-            // 1. BLOKIR MERAH: Jika Nama Mirip (>=85%) DAN Data Pendukung (ID/DOB) terbukti KLOP
-            if ($maxSimilarity >= 85 && ($dobMatched || $idMatched)) {
+            // KONDISI BLOKIR MERAH
+            if ($idMatched || $nameMatched) {
                 $isExactMatch = true;
                 $exactMatchData = $dttot;
-                break; 
+                break;
             }
 
-            // 2. PROVEN FALSE POSITIVE: Jika DTTOT punya tanggal lahir, kasir mengisi tanggal lahir, dan TERBUKTI BEDA mutlak
-            if ($hasDttotDob && !empty($inputDob) && !$dobMatched) {
-                continue; // Lewati karena terbukti orang yang berbeda
+            // Peringatan parsial
+            if (str_contains($fullRecordText, $firstWord)) {
+                $warningMatches->push($dttot);
             }
-
-            // 3. WARNING KUNING (PENGAMANAN UTAMA DATA TANPA ID/DOB): 
-            // Jika nama mirip (>=85%) TETAPI database DTTOT tidak punya info DOB/ID untuk diverifikasi,
-            // sistem tidak akan membiarkannya lolos tanpa suara, melainkan memunculkan Warning Popup agar kasir mengecek fisik KTP.
-            $warningMatches->push($dttot);
         }
 
         return [
