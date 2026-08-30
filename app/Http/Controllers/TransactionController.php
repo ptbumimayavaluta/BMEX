@@ -9,7 +9,8 @@ use App\Models\Shift;
 use App\Models\DttotList;
 use App\Models\Expense;
 use App\Models\ChartOfAccount; 
-use App\Services\AccountingService; 
+use App\Services\AccountingService;
+use App\Services\ComplianceService; 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -122,7 +123,7 @@ class TransactionController extends Controller
     /**
      * Proses Simpan Transaksi
      */
-    public function store(Request $request)
+    public function store(Request $request, ComplianceService $complianceService)
     {
         // [FIX TIMEZONE] Paksa waktu server jadi WITA
         date_default_timezone_set('Asia/Makassar');
@@ -234,6 +235,22 @@ class TransactionController extends Controller
             $userId = Auth::id();
             $totalIDRAll = 0;
 
+            // ============================================================
+            // [BARU] LOGIKA CHECK THRESHOLD APU-PPT (USD 10.000 / Rp 150 JUTA)
+            // ============================================================
+            $inputCustomerIdentity = strtoupper(trim($request->customer_identity_no));
+            
+            // Hitung total rupiah seluruh item dalam transaksi yang sedang diinput ini
+            $currentTransactionTotalIDR = 0;
+            foreach ($request->items as $item) {
+                $currentTransactionTotalIDR += ($item['amount_foreign'] * $item['rate']);
+            }
+
+            // Cek status akumulasi bulanan nasabah
+            $compliance = $complianceService->checkThresholdStatus($inputCustomerIdentity, $currentTransactionTotalIDR);
+            $isLtktTransaction = $compliance['is_exceeded'] ? 1 : 0;
+            // ============================================================
+
             foreach ($request->items as $item) {
                 $totalIDR = $item['amount_foreign'] * $item['rate'];
                 $totalIDRAll += $totalIDR;
@@ -253,6 +270,7 @@ class TransactionController extends Controller
                     'amount_foreign' => $item['amount_foreign'],
                     'rate' => $item['rate'],
                     'total_idr' => $totalIDR,
+                    'is_ltkt' => $isLtktTransaction, // <-- TAMBAHKAN BARIS INI
                     'no_nota' => $noNota,
                     
                     // --- DATA NASABAH ---
@@ -357,7 +375,7 @@ class TransactionController extends Controller
     {
         $cleanInput = strtoupper(trim($inputName));
 
-        // 1. FILTER PANJANG KATA: Kata kurang dari 4 karakter (misal "BRI", "BCA", "ALI") LANGSUNG LOLOS
+        // 1. Kata kurang dari 4 karakter langsung lolos
         if (strlen($cleanInput) < 4) {
             return [
                 'is_block' => false,
@@ -366,7 +384,6 @@ class TransactionController extends Controller
             ];
         }
 
-        // Ambil kata pertama nasabah untuk query awal di DB
         $firstWord = explode(' ', $cleanInput)[0];
         if (strlen($firstWord) < 3) {
             $firstWord = $cleanInput;
@@ -390,7 +407,6 @@ class TransactionController extends Controller
         $isExactMatch = false;
 
         foreach ($candidates as $dttot) {
-            // Pecah nama utama dan seluruh alias berdasarkan kata kunci " ALIAS "
             $aliases = explode(' ALIAS ', strtoupper($dttot->name));
 
             $maxSimilarity = 0;
@@ -398,40 +414,41 @@ class TransactionController extends Controller
                 $alias = trim($alias);
                 if (empty($alias)) continue;
 
-                // Hitung persentase kemiripan nama (similar_text)
                 similar_text($cleanInput, $alias, $percent);
                 if ($percent > $maxSimilarity) {
                     $maxSimilarity = $percent;
                 }
             }
 
-            // A. CEK JIKA IDENTITAS SAMA PERSIS (MATCH NO. KTP/PASPOR ATAU TGL LAHIR)
-            $dobMatched = !empty($inputDob) && !empty($dttot->birth_date) && (strpos($dttot->birth_date, $inputDob) !== false);
-            $idMatched  = !empty($inputNoId) && !empty($dttot->description) && (strpos(strtoupper($dttot->description), $inputNoId) !== false);
+            // Jika kemiripan nama di bawah 85%, abaikan
+            if ($maxSimilarity < 85) continue;
 
-            if ($maxSimilarity >= 85 && ($dobMatched || $idMatched)) {
+            // Cek kecocokan data pendukung (ID & Tanggal Lahir)
+            $dobMatched = !empty($inputDob) && !empty($dttot->birth_date) && (strpos($dttot->birth_date, $inputDob) !== false || $dttot->birth_date == $inputDob);
+            $idMatched  = !empty($inputNoId) && !empty($dttot->description) && (strpos(strtoupper($dttot->description), strtoupper($inputNoId)) !== false);
+
+            // =========================================================================
+            // ATURAN UTAMA:
+            // Blokir Merah HANYA JIKA Nama Mirip (>=85%) DAN (ID Cocok ATAU Tanggal Lahir Cocok).
+            // Jika salah satu atau keduanya berbeda, sistem menganggap ini orang yang berbeda.
+            // =========================================================================
+            if ($dobMatched || $idMatched) {
                 $isExactMatch = true;
                 $exactMatchData = $dttot;
-                break; // Jika sudah Blokir Total, stop pencarian
+                break; 
             }
 
-            // B. JIKA NAMA KEMIRIPAN TINGGI (>= 75%) TAPI TANGGAL LAHIR / ID BEDA
-            if ($maxSimilarity >= 75) {
-                // Cross-check: Jika DTTOT punya tanggal lahir DAN Input Kasir punya tanggal lahir TAPI BEDA -> SKIP (False Positive)
-                if (!empty($dttot->birth_date) && !empty($inputDob)) {
-                    if (strpos($dttot->birth_date, $inputDob) === false && $dttot->birth_date != $inputDob) {
-                        continue; // Lewati, karena tanggal lahirnya terbukti beda
-                    }
-                }
-
-                $warningMatches->push($dttot);
+            // Jika Tanggal Lahir yang diinput kasir BERBEDA dengan database DTTOT, 
+            //abaikan secara mutlak (biarkan transaksi jalan terus tanpa hambatan)
+            if (!empty($dttot->birth_date) && !empty($inputDob) && !$dobMatched) {
+                continue; 
             }
         }
 
         return [
             'is_block'   => $isExactMatch,
             'block_data' => $exactMatchData,
-            'is_warning' => $warningMatches->count() > 0,
+            'is_warning' => false, // Set false agar tidak memunculkan peringatan mengganggu jika hanya nama doang yang mirip
             'matches'    => $warningMatches
         ];
     }

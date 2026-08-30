@@ -11,7 +11,7 @@
         @media print {
             /* 1. RESET GLOBAL: Hapus elemen web, Tampilkan struk */
             body {
-                margin: 0;      /* Serahkan urusan margin ke settingan Printer */
+                margin: 0;
                 padding: 0;
             }
 
@@ -20,7 +20,7 @@
             /* 2. SETTING KERTAS: Auto (Ikut Driver) & Lebar Penuh */
             @page { 
                 size: auto;   
-                margin: 0; /* PENTING: Set 0 agar tidak konflik dengan Driver Printer */
+                margin: 0; 
             }
 
             /* 3. PENGATURAN AREA STRUK */
@@ -32,21 +32,18 @@
             }
 
             #receipt-area {
-            display: block !important;
-            position: absolute; 
-            left: 0; 
-            top: 0;
-            width: 72mm; /* Diubah dari 100% agar pas di kertas Roll 76mm TM-U220 */
-
-            padding-top: 5px;
-            padding-right: 2mm; 
-
-            /* Memicu penggantian font ke internal printer via Utility Epson */
-            font-family: Arial, Helvetica, 'FontA11', 'FontB11', 'Control', sans-serif !important; 
-            font-size: 9pt;  
-            line-height: 1.15; 
-            letter-spacing: 0px;
-        }
+                display: block !important;
+                position: absolute; 
+                left: 0; 
+                top: 0;
+                width: 72mm;
+                padding-top: 5px;
+                padding-right: 2mm; 
+                font-family: Arial, Helvetica, 'FontA11', 'FontB11', 'Control', sans-serif !important; 
+                font-size: 9pt;  
+                line-height: 1.15; 
+                letter-spacing: 0px;
+            }
             #receipt-area table, 
             #receipt-area td, 
             #receipt-area th, 
@@ -103,10 +100,10 @@
             }
             
             .sign-area {
-            margin-top: 15px; 
-            width: 100%;
-            font-size: 8pt;
-            clear: both;
+                margin-top: 15px; 
+                width: 100%;
+                font-size: 8pt;
+                clear: both;
             }
 
             .sign-box { 
@@ -148,21 +145,17 @@
     <div id="receipt-area">
         @if($printNota && $trxHeader)
         <div style="padding: 0 2px;">
-            
-            {{-- HEADER CABANG --}}
             <div class="receipt-header">
                 <div class="receipt-title" style="font-weight: bold; font-size: 12pt;">BALI MONEY EXCHANGE</div>
                 <div class="receipt-title">{{ $trxHeader->branch->name ?? 'MONEY CHANGER' }}</div>
                 <div style="font-size: 8pt;">{{ $trxHeader->branch->address ?? 'Alamat Cabang' }}</div>
             </div>
 
-            {{-- INFO NOTA --}}
             <div class="receipt-info" style="display: flex; justify-content: space-between; border-bottom: 1px dashed #000; padding-bottom: 3px;">
                 <div>No: {{ $trxHeader->no_nota }}</div>
                 <div>{{ $trxHeader->created_at->format('d/m/Y H:i') }}</div>
             </div>
 
-            {{-- INFO NASABAH (LENGKAP TAPI RAPAT) --}}
             <div class="receipt-info" style="margin-top: 5px;">
                 <table style="width: 100%;">
                     <tr>
@@ -192,13 +185,10 @@
                         <td>:</td>
                         <td>{{ $trxHeader->customer_country }}</td>
                     </tr>
-                    
-                    {{-- TYPE TRANSAKSI (HEADER) --}}
                     <tr>
                         <td style="padding-top: 5px;">TYPE</td>
                         <td style="padding-top: 5px;">:</td>
                         <td style="padding-top: 5px;">
-                            {{-- UPPERCASE TANPA BOLD --}}
                             <span style="text-transform: uppercase;">
                                 {{ $trxHeader->type == 'buy' ? 'PEMBELIAN (BUY)' : 'PENJUALAN (SELL)' }}
                             </span>
@@ -207,7 +197,6 @@
                 </table>
             </div>
 
-            {{-- TABEL 4 KOLOM (CURR | AMT | RATE | TOTAL) --}}
             <table class="receipt-table">
                 <thead>
                     <tr>
@@ -231,7 +220,6 @@
                 </tbody>
             </table>
 
-            {{-- TOTAL (TANPA BOLD) --}}
             <div class="dashed-top">
                 <div style="display: flex; justify-content: space-between; font-size: 9pt;">
                     <span>TOTAL IDR</span>
@@ -242,7 +230,6 @@
                 </div>
             </div>
 
-            {{-- TANDA TANGAN --}}
             <div class="sign-area">
                 <div class="sign-box">
                     <div>Customer</div> 
@@ -255,14 +242,12 @@
                 </div>
             </div>
 
-            {{-- FOOTER --}}
             <div class="receipt-footer">
                 "This transaction was conducted below the threshold / equivalent to USD 10,000"
             </div>
             <div class="receipt-footer">
                 "Please recount your money before leaving the outlet/office. No complaints or claims regarding a shortfall will be entertained after leaving the counter."
             </div>
-
         </div>
         @endif
     </div>
@@ -280,7 +265,7 @@
                 Pastikan uang fisik sudah sesuai dengan sistem.
             </p>
             <div class="flex gap-3">
-                <button type="button" onclick="document.getElementById('endShiftModal').classList.add('hidden')" class="flex-1 py-2.5 rounded border border-gray-300 text-gray-700 text-xs font-bold hover:bg-gray-50 transition">BATAL</button>
+                <button type="button" onclick="closeEndShiftModal()" class="flex-1 py-2.5 rounded border border-gray-300 text-gray-700 text-xs font-bold hover:bg-gray-50 transition">BATAL</button>
                 <button type="button" onclick="document.getElementById('endShiftForm').submit()" class="flex-1 py-2.5 rounded bg-red-600 text-white text-xs font-bold hover:bg-red-700 shadow transition">YA, TUTUP</button>
             </div>
         </div>
@@ -298,7 +283,7 @@
     </div>
     @endif
 
-    {{-- SUCCESS POPUP --}}
+    {{-- DTTOT WARNING POPUP --}}
     @if(session('dttot_warning'))
     <div class="fixed inset-0 z-[999] bg-yellow-900/80 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden border-t-8 border-yellow-500 p-6 text-left">
@@ -337,34 +322,29 @@
             </div>
         </div>
     </div>
+    @endif
 
-    <script>
-        function submitOverrideDttot() {
-        var form = document.getElementById('transactionForm');
-        var overrideInput = document.getElementById('dttotOverrideInput');
-        
-        // 1. Set flag override dttot
-        if (overrideInput) {
-            overrideInput.value = '1';
-        }
-        
-        // 2. Bersihkan format angka valas
-        var inputs = form.querySelectorAll('input[name*="amount_foreign"]');
-        inputs.forEach(function(input) {
-            if (typeof parseNumber === "function") {
-                input.value = parseNumber(input.value); 
-            } else {
-                input.value = input.value.replace(/\./g, '').replace(/,/g, '.');
-            }
-        });
-
-        // 3. PENTING: Matikan validasi HTML browser agar tidak memblokir submit
-        form.setAttribute('novalidate', 'novalidate');
-
-        // 4. Submit form langsung
-        form.submit();
-    }
-    </script>
+    {{-- SUCCESS PRINT POPUP --}}
+    @if(session('transaction_success'))
+    <div id="printConfirmModal" class="fixed inset-0 z-[999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 text-center border-t-4 border-green-600">
+            <div class="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            <h3 class="text-base font-bold text-gray-800 mb-1">Transaksi Berhasil!</h3>
+            <p class="text-xs text-gray-500 mb-6">{{ session('transaction_success') }}</p>
+            
+            <div class="flex gap-2">
+                <button type="button" onclick="closePrintModal()" class="flex-1 py-2.5 rounded border border-gray-300 text-gray-700 text-xs font-bold hover:bg-gray-50 transition">
+                    BATAL / SELESAI
+                </button>
+                <button type="button" onclick="doPrint()" class="flex-1 py-2.5 rounded bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 shadow transition flex items-center justify-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                    PRINT STRUK
+                </button>
+            </div>
+        </div>
+    </div>
     @endif
 
     {{-- ================================================================= --}}
@@ -388,7 +368,7 @@
             </div>
             <form action="{{ route('transaction.endShift') }}" method="POST" id="endShiftForm">
                 @csrf
-                <button type="button" onclick="document.getElementById('endShiftModal').classList.remove('hidden')" class="bg-gray-800 text-white px-4 py-2 rounded text-xs font-bold hover:bg-black transition shadow h-9 flex items-center gap-2">
+                <button type="button" onclick="openEndShiftModal()" class="bg-gray-800 text-white px-4 py-2 rounded text-xs font-bold hover:bg-black transition shadow h-9 flex items-center gap-2">
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                     TUTUP SHIFT
                 </button>
@@ -398,11 +378,10 @@
 
     {{-- FORMULIR UTAMA --}}
     <form action="{{ route('transaction.store') }}" method="POST" id="transactionForm" class="no-print">
-    @csrf
-    {{-- BARU: Input untuk menandai jika kasir sudah verifikasi KTP --}}
-    <input type="hidden" name="dttot_override" id="dttotOverrideInput" value="0">
-    <input type="hidden" name="transaction_date" id="hiddenDate" value="{{ date('Y-m-d') }}">
-        
+        @csrf
+        <input type="hidden" name="dttot_override" id="dttotOverrideInput" value="0">
+        <input type="hidden" name="transaction_date" id="hiddenDate" value="{{ date('Y-m-d') }}">
+            
         {{-- CARD 1: DATA NASABAH (STEP 1) --}}
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 overflow-hidden">
             <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center gap-2">
@@ -453,7 +432,6 @@
                             <span x-text="custType == 'INDIVIDUAL' ? 'Nama Lengkap' : 'Nama Perusahaan'"></span> <span class="text-red-500">*</span>
                         </td>
                         <td class="p-3 relative">
-                            {{-- Input Pencarian --}}
                             <input type="text" name="customer_name" 
                                    x-model="search" 
                                    @input.debounce.300ms="fetchCustomers()" 
@@ -462,7 +440,6 @@
                                    class="w-full border-gray-300 rounded p-1.5 text-xs font-bold uppercase focus:ring-primary focus:border-primary" 
                                    placeholder="KETIK NAMA UNTUK CARI..." required>
                             
-                            {{-- Dropdown Autocomplete --}}
                             <div x-show="open && filteredList.length > 0" class="absolute z-50 bg-white w-full max-w-lg border border-gray-200 rounded shadow-xl mt-1 max-h-40 overflow-y-auto" style="display: none;">
                                 <ul>
                                     <template x-for="cust in filteredList" :key="cust.customer_identity_no">
@@ -517,7 +494,6 @@
                         </td>
                         <td class="p-3">
                             <div class="grid grid-cols-2 gap-4">
-                                {{-- Gender (Wajib jika Perorangan) --}}
                                 <div x-show="custType == 'INDIVIDUAL'" class="flex items-center gap-2 border-r border-gray-200 pr-4">
                                     <span class="text-[10px] font-bold text-gray-400 uppercase">Gender:</span>
                                     <div class="flex gap-3">
@@ -532,7 +508,6 @@
                                     </div>
                                 </div>
                                 
-                                {{-- Tanggal Lahir (OPSIONAL) --}}
                                 <div class="flex items-center gap-2">
                                     <span class="text-[10px] font-bold text-gray-400 uppercase whitespace-nowrap" x-text="custType == 'INDIVIDUAL' ? 'Tgl Lahir (Opsional):' : 'Tgl Berdiri (Opsional):'"></span>
                                     <input type="date" name="customer_dob" x-model="formData.dob" class="border-gray-300 rounded p-1 text-xs font-bold uppercase focus:ring-primary focus:border-primary w-full text-gray-600">
@@ -653,7 +628,6 @@
                 </button>
             </div>
             
-            {{-- [UPDATE] MASTER SWITCH TIPE TRANSAKSI --}}
             <div class="px-4 py-3 bg-yellow-50 border-b border-yellow-100 flex items-center">
                 <label class="text-xs font-bold text-gray-500 uppercase mr-2">JENIS TRANSAKSI</label>
                 <select id="globalType" onchange="updateAllRowsType()" class="border-gray-300 rounded p-1.5 text-sm font-bold w-48 focus:ring-primary focus:border-primary">
@@ -666,7 +640,6 @@
                 <table class="w-full text-sm text-left">
                     <thead class="bg-primary text-white font-semibold text-xs uppercase tracking-wide">
                         <tr>
-                            {{-- [UPDATE] KOLOM TIPE DIHAPUS --}}
                             <th class="p-3">Currency</th>
                             <th class="p-3 text-right">Amount</th>
                             <th class="p-3 text-right">Rate</th>
@@ -676,8 +649,6 @@
                     </thead>
                     <tbody id="tableBody" class="divide-y divide-gray-100">
                         <tr class="bg-white group hover:bg-gray-50 transition">
-                            
-                            {{-- INPUT HIDDEN UNTUK TIPE --}}
                             <input type="hidden" name="items[0][type]" class="item-type" value="buy">
 
                             <td class="p-2 align-top">
@@ -765,16 +736,44 @@
     </datalist>
 
     {{-- ================================================================= --}}
-    {{-- SCRIPT JAVASCRIPT --}}
+    {{-- SCRIPT JAVASCRIPT UTAMA (CLEAN & BERSIH DUPLIKASI) --}}
     {{-- ================================================================= --}}
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        let rowCount = 1;
+
+        // Modal Handler
         function openEndShiftModal() {
-            document.getElementById('endShiftModal').classList.remove('hidden');
+            document.getElementById('endShiftModal')?.classList.remove('hidden');
         }
         function closeEndShiftModal() {
-            document.getElementById('endShiftModal').classList.add('hidden');
+            document.getElementById('endShiftModal')?.classList.add('hidden');
+        }
+        function closePrintModal() {
+            document.getElementById('printConfirmModal')?.remove();
+        }
+        function doPrint() {
+            window.print();
+            closePrintModal();
         }
 
+        // DTTOT Override Submit
+        function submitOverrideDttot() {
+            var form = document.getElementById('transactionForm');
+            var overrideInput = document.getElementById('dttotOverrideInput');
+            
+            if (overrideInput) overrideInput.value = '1';
+            
+            var inputs = form.querySelectorAll('input[name*="amount_foreign"]');
+            inputs.forEach(function(input) {
+                input.value = parseNumber(input.value); 
+            });
+
+            form.setAttribute('novalidate', 'novalidate');
+            form.submit();
+        }
+
+        // Formatting & Calculations
         function formatNumber(input) {
             let value = input.value.replace(/\D/g, '');
             if (value !== '') value = new Intl.NumberFormat('id-ID').format(value);
@@ -784,84 +783,39 @@
 
         function parseNumber(str) {
             if (!str) return 0;
-            return parseFloat(str.replace(/\./g, '').replace(/,/g, '.')) || 0;
+            // Jika input sudah berupa angka tunggal tanpa titik ribuan, langsung kembalikan float
+            if (typeof str === 'number') return str;
+            return parseFloat(str.toString().replace(/\./g, '').replace(/,/g, '.')) || 0;
         }
 
-        // --- [BARU] AUTOCOMPLETE LOGIC WITH AJAX FETCH ---
-        function customerAutocomplete() {
-        return {
-            search: '{{ old("customer_name") }}',
-            open: false,
-            filteredList: [],
-            formData: {
-                type: '{{ old("customer_id_type", "KTP") }}', 
-                identity: '{{ old("customer_identity_no") }}', 
-                address: '{{ old("customer_address") }}', 
-                job: '{{ old("customer_job") }}', 
-                country: '{{ old("customer_country") }}',
-                gender: '{{ old("customer_gender") }}', 
-                dob: '{{ old("customer_dob") }}',
-                pic_name: '{{ old("representative_name") }}', 
-                pic_id_type: '{{ old("representative_id_type", "KTP") }}', 
-                pic_id_no: '{{ old("representative_id_no") }}',
-                source: '{{ old("source_of_funds") }}', 
-                purpose: '{{ old("transaction_purpose") }}'
-            },
-                // Fungsi Fetch API ke Server
-                async fetchCustomers() {
-                    if (this.search.length < 2) { 
-                        this.open = false; 
-                        return; 
-                    }
-                    
-                    try {
-                        let response = await fetch(`{{ route('transaction.search.customers') }}?q=${this.search}`);
-                        let data = await response.json();
-                        
-                        this.filteredList = data;
-                        this.open = data.length > 0;
-                    } catch (error) {
-                        console.error('Gagal mengambil data:', error);
-                    }
-                },
-                selectCustomer(c) {
-                    // Update Search Box & Tipe Nasabah
-                    this.search = c.customer_name;
-                    this.custType = c.customer_type || 'INDIVIDUAL';
-
-                    // Update Semua Field (Auto Fill)
-                    this.formData.type = c.customer_id_type || 'KTP';
-                    this.formData.identity = c.customer_identity_no || '';
-                    this.formData.address = c.customer_address || '';
-                    this.formData.job = c.customer_job || '';
-                    this.formData.country = c.customer_country || '';
-                    this.formData.gender = c.customer_gender || '';
-                    this.formData.dob = c.customer_dob || '';
-                    
-                    // APU PPT
-                    this.formData.source = c.source_of_funds || '';
-                    this.formData.purpose = c.transaction_purpose || '';
-
-                    // Data PIC (Jika Ada)
-                    this.formData.pic_name = c.representative_name || '';
-                    this.formData.pic_id_type = c.representative_id_type || 'KTP';
-                    this.formData.pic_id_no = c.representative_id_no || '';
-
-                    this.open = false;
-                }
-            }
+        function calculateRow(element) {
+            const row = element.closest('tr');
+            let amount = parseNumber(row.querySelector('input[name*="[amount_foreign]"]').value);
+            let rateInput = row.querySelector('input[name*="[rate]"]');
+            let rate = parseFloat(rateInput.value) || 0;
+            
+            let total = amount * rate;
+            row.querySelector('.total-display').value = new Intl.NumberFormat('id-ID').format(total);
+            calculateGrandTotal();
         }
 
-        // --- [UPDATE] ROW MANIPULATION LOGIC (GLOBAL SWITCH) ---
-        let rowCount = 1;
-        
-        // Fungsi Tambah Baris
+        function calculateGrandTotal() {
+            let grandTotal = 0;
+            document.querySelectorAll('#tableBody tr').forEach(row => {
+                let amount = parseNumber(row.querySelector('input[name*="[amount_foreign]"]').value);
+                let rateInput = row.querySelector('input[name*="[rate]"]');
+                let rate = parseFloat(rateInput.value) || 0;
+                grandTotal += (amount * rate);
+            });
+            document.getElementById('grandTotal').innerText = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(grandTotal);
+        }
+
+        // Table Rows Management
         function addRow() {
             const tbody = document.getElementById('tableBody');
             const newRow = document.createElement('tr');
             newRow.className = "bg-white border-t border-gray-100 group hover:bg-gray-50 transition";
             
-            // Ambil nilai Tipe dari Master Switch di atas
             let currentType = document.getElementById('globalType').value;
 
             newRow.innerHTML = `
@@ -889,10 +843,8 @@
             rowCount++;
         }
 
-        // [BARU] Fungsi Sinkronisasi saat Master Switch berubah
         function updateAllRowsType() {
             let type = document.getElementById('globalType').value;
-            // Cari semua input hidden dengan class 'item-type' dan update nilainya
             document.querySelectorAll('.item-type').forEach(input => {
                 input.value = type;
             });
@@ -908,30 +860,134 @@
             }
         }
 
-        function calculateRow(element) {
-            const row = element.closest('tr');
-            let amount = parseNumber(row.querySelector('input[name*="[amount_foreign]"]').value);
-            let rateInput = row.querySelector('input[name*="[rate]"]');
-            let rate = parseFloat(rateInput.value) || 0;
-            
-            let total = amount * rate;
-            row.querySelector('.total-display').value = new Intl.NumberFormat('id-ID').format(total);
-            calculateGrandTotal();
-        }
+        // Autocomplete Logic
+        function customerAutocomplete() {
+        return {
+            custType: '{{ old("customer_type", "INDIVIDUAL") }}',
+            search: '{{ old("customer_name") }}',
+            open: false,
+            filteredList: [],
+            isThresholdExceeded: false, // <-- 1. TAMBAHKAN VARIABLE STATUS DISINI
+            formData: {
+                type: '{{ old("customer_id_type", "KTP") }}', 
+                identity: '{{ old("customer_identity_no") }}', 
+                address: '{{ old("customer_address") }}', 
+                job: '{{ old("customer_job") }}', 
+                country: '{{ old("customer_country") }}',
+                gender: '{{ old("customer_gender") }}', 
+                dob: '{{ old("customer_dob") }}',
+                pic_name: '{{ old("representative_name") }}', 
+                pic_id_type: '{{ old("representative_id_type", "KTP") }}', 
+                pic_id_no: '{{ old("representative_id_no") }}',
+                source: '{{ old("source_of_funds") }}', 
+                purpose: '{{ old("transaction_purpose") }}'
+            },
+            async fetchCustomers() {
+                if (this.search.length < 2) { 
+                    this.open = false; 
+                    return; 
+                }
+                try {
+                    let response = await fetch(`{{ route('transaction.search.customers') }}?q=${encodeURIComponent(this.search)}`);
+                    let data = await response.json();
+                    this.filteredList = data;
+                    this.open = data.length > 0;
+                } catch (error) {
+                    console.error('Gagal mengambil data:', error);
+                }
+            },
+            selectCustomer(c) {
+                this.search = c.customer_name;
+                this.custType = c.customer_type || 'INDIVIDUAL';
+                this.formData.type = c.customer_id_type || 'KTP';
+                this.formData.identity = c.customer_identity_no || '';
+                this.formData.address = c.customer_address || '';
+                this.formData.job = c.customer_job || '';
+                this.formData.country = c.customer_country || '';
+                this.formData.gender = c.customer_gender || '';
+                this.formData.dob = c.customer_dob || '';
+                this.formData.source = c.source_of_funds || '';
+                this.formData.purpose = c.transaction_purpose || '';
+                this.formData.pic_name = c.representative_name || '';
+                this.formData.pic_id_type = c.representative_id_type || 'KTP';
+                this.formData.pic_id_no = c.representative_id_no || '';
+                this.open = false;
+                
+                if (c.customer_identity_no) {
+                    checkApuPptThreshold(c.customer_identity_no);
+                }
+            }
+        };
+    }
 
-        function calculateGrandTotal() {
-            let grandTotal = 0;
+        // Pengecekan Compliance APU-PPT Threshold
+        let globalThresholdExceeded = false;
+
+// Pengecekan Compliance APU-PPT Threshold
+        function checkApuPptThreshold(identityNo) {
+            if (!identityNo || identityNo.trim().length < 3) return;
+
+            let currentTotalAmount = 0;
             document.querySelectorAll('#tableBody tr').forEach(row => {
-                let amount = parseNumber(row.querySelector('input[name*="[amount_foreign]"]').value);
+                let amountInput = row.querySelector('input[name*="[amount_foreign]"]');
                 let rateInput = row.querySelector('input[name*="[rate]"]');
-                let rate = parseFloat(rateInput.value) || 0;
-                grandTotal += (amount * rate);
+                let amount = amountInput ? parseNumber(amountInput.value) : 0;
+                let rate = rateInput ? parseFloat(rateInput.value) || 0 : 0;
+                currentTotalAmount += (amount * rate);
             });
-            document.getElementById('grandTotal').innerText = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(grandTotal);
+
+            fetch(`/compliance-check/threshold/${encodeURIComponent(identityNo.trim())}?amount=${currentTotalAmount}`)
+                .then(response => response.json())
+                .then(res => {
+                    if (res.status === 'success') {
+                        let data = res.data;
+                        if (data.is_exceeded) {
+                            globalThresholdExceeded = true; // <-- KUNCI STATUS MENJADI TRUE
+                            
+                            Swal.fire({
+                                title: 'ALERT APU-PPT (LTKT)!',
+                                html: `
+                                    <div class="text-left text-xs space-y-2">
+                                        <p class="text-red-600 font-bold text-sm">⚠️ Nasabah melampaui Threshold Kumulatif USD 10.000 (Rp 150.000.000) bulan ini!</p>
+                                        <hr>
+                                        <p>• Nomor Identitas: <b>${data.customer_identity_no}</b></p>
+                                        <p>• Total Transaksi Bulan Ini (DB): <b>Rp ${new Intl.NumberFormat('id-ID').format(data.current_total)}</b></p>
+                                        <p>• Total Setelah Transaksi Ini: <b>Rp ${new Intl.NumberFormat('id-ID').format(data.projected_total)}</b></p>
+                                        <div class="bg-red-50 p-2 rounded text-red-800 font-medium mt-2">
+                                            * Wajib isi Sumber Dana & Tujuan Transaksi sebelum submit!
+                                        </div>
+                                    </div>
+                                `,
+                                icon: 'warning',
+                                confirmButtonText: 'SAYA MENGERTI',
+                                confirmButtonColor: '#DC2626'
+                            });
+                        } else {
+                            globalThresholdExceeded = false; // Reset jika aman
+                            if (data.is_warning) {
+                                Swal.fire({
+                                    title: 'PERINGATAN AKUMULASI APU-PPT',
+                                    html: `
+                                        <div class="text-left text-xs">
+                                            <p>Akumulasi transaksi nasabah bulan ini hampir mencapai threshold USD 10.000.</p>
+                                            <p class="mt-1">• Total Akumulasi (DB): <b>Rp ${new Intl.NumberFormat('id-ID').format(data.current_total)}</b></p>
+                                            <p>• Sisa Limit Aman: <b>Rp ${new Intl.NumberFormat('id-ID').format(data.remaining_limit)}</b></p>
+                                        </div>
+                                    `,
+                                    icon: 'info',
+                                    confirmButtonColor: '#F59E0B'
+                                });
+                            }
+                        }
+                    }
+                })
+                .catch(err => console.error('[APU-PPT] Error AJAX:', err));
         }
 
+        // Init Single Listener
+        // Init Single Listener
         document.addEventListener('DOMContentLoaded', function() {
-            // Hitung ulang kalkulasi baris & grand total jika ada data old() dari reload
+            // Format angka awal saat reload
             document.querySelectorAll('#tableBody tr').forEach(row => {
                 let amountInput = row.querySelector('input[name*="[amount_foreign]"]');
                 if (amountInput && amountInput.value) {
@@ -939,49 +995,101 @@
                 }
             });
 
-            document.getElementById('transactionForm').addEventListener('submit', function(e) {
-                let inputs = this.querySelectorAll('input[name*="amount_foreign"]');
-                inputs.forEach(input => {
-                    input.value = parseNumber(input.value); 
+            // Event Blur Identitas (Tetap jalan untuk notifikasi awal)
+            let identityInput = document.querySelector('input[name="customer_identity_no"]');
+            if (identityInput) {
+                identityInput.addEventListener('blur', function() {
+                    checkApuPptThreshold(this.value.trim());
                 });
+            }
+
+            // Event Debounce Nominal/Rate
+            let timeout = null;
+            document.getElementById('tableBody')?.addEventListener('input', function(e) {
+                if (e.target.name && (e.target.name.includes('amount_foreign') || e.target.name.includes('rate'))) {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => {
+                        let idNo = document.querySelector('input[name="customer_identity_no"]')?.value;
+                        if (idNo) checkApuPptThreshold(idNo.trim());
+                    }, 500);
+                }
             });
+
+            // SCRIPT SUBMIT FORM TERBARU (ANTI MOGOK)
+            const form = document.getElementById('transactionForm');
+            if (form) {
+                form.addEventListener('submit', async function(e) {
+                    e.preventDefault(); // Tahan pengiriman bawaan browser
+
+                    try {
+                        let currentTotalAmount = 0;
+                        document.querySelectorAll('#tableBody tr').forEach(row => {
+                            let amountInput = row.querySelector('input[name*="[amount_foreign]"]');
+                            let rateInput = row.querySelector('input[name*="[rate]"]');
+                            let amount = amountInput ? parseNumber(amountInput.value) : 0;
+                            let rate = rateInput ? parseFloat(rateInput.value) || 0 : 0;
+                            currentTotalAmount += (amount * rate);
+                        });
+
+                        let idInput = document.querySelector('input[name="customer_identity_no"]');
+                        let idNo = idInput ? idInput.value.trim() : '';
+
+                        if (idNo.length >= 3) {
+                            // Tampilkan loading (Sekarang tidak akan error karena SweetAlert sudah ditambahkan)
+                            Swal.fire({
+                                title: 'Memproses Transaksi...',
+                                text: 'Mengecek histori batas APU-PPT nasabah',
+                                allowOutsideClick: false,
+                                didOpen: () => { Swal.showLoading(); }
+                            });
+
+                            // Pengecekan real-time mutlak ke database (Menggunakan Base URL yang aman)
+                            let fetchUrl = `{{ url('/compliance-check/threshold') }}/${encodeURIComponent(idNo)}?amount=${currentTotalAmount}`;
+                            let response = await fetch(fetchUrl);
+                            
+                            if (response.ok) {
+                                let res = await response.json();
+                                
+                                // Jika benar-benar MELEBIHI threshold, langsung tolak di tempat!
+                                if (res.status === 'success' && res.data.is_exceeded) {
+                                    Swal.fire({
+                                        title: 'TRANSAKSI DITOLAK!',
+                                        html: `
+                                            <div class="text-left text-xs space-y-2">
+                                                <p class="text-red-600 font-bold text-sm">⚠️ Nasabah ini telah melampaui batas transaksi USD 10.000 di bulan ini!</p>
+                                                <hr>
+                                                <p>Total Akumulasi: <b class="text-red-600">Rp ${new Intl.NumberFormat('id-ID').format(res.data.projected_total)}</b></p>
+                                                <p class="mt-2 text-gray-500 italic">*Silakan arahkan nasabah untuk melakukan transaksi di bulan berikutnya.</p>
+                                            </div>
+                                        `,
+                                        icon: 'error',
+                                        confirmButtonText: 'KEMBALI',
+                                        confirmButtonColor: '#DC2626'
+                                    });
+                                    return false; // PROSES DIBATALKAN DISINI
+                                }
+                            } else {
+                                // Jika server merespon dengan HTML Error (500)
+                                Swal.fire('Error Server!', 'Terjadi kesalahan pada Controller. Cek Laravel Log.', 'error');
+                                return false;
+                            }
+                        }
+                    } catch(err) {
+                        console.error('Gagal saat validasi ke server:', err);
+                        Swal.fire('Error Koneksi', 'Gagal menghubungi server.', 'error');
+                        return false;
+                    }
+
+                    // TAHAP AKHIR: JIKA AMAN (LOLOS THRESHOLD)
+                    let inputs = form.querySelectorAll('input[name*="amount_foreign"]');
+                    inputs.forEach(input => {
+                        input.value = parseNumber(input.value); 
+                    });
+                    
+                    Swal.close(); 
+                    form.submit(); 
+                });
+            }
         });
     </script>
-    {{-- SCRIPT OTOMATIS PRINT SAAT TRANSAKSI BERHASIL --}}
-    @if(session('transaction_success'))
-    <div id="printConfirmModal" class="fixed inset-0 z-[999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 text-center border-t-4 border-green-600">
-            <div class="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-            </div>
-            <h3 class="text-base font-bold text-gray-800 mb-1">Transaksi Berhasil!</h3>
-            <p class="text-xs text-gray-500 mb-6">{{ session('transaction_success') }}</p>
-            
-            <div class="flex gap-2">
-                <button type="button" onclick="closePrintModal()" class="flex-1 py-2.5 rounded border border-gray-300 text-gray-700 text-xs font-bold hover:bg-gray-50 transition">
-                    BATAL / SELESAI
-                </button>
-                <button type="button" onclick="doPrint()" class="flex-1 py-2.5 rounded bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 shadow transition flex items-center justify-center gap-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                    PRINT STRUK
-                </button>
-            </div>
-        </div>
-    </div>
-
-    {{-- TAMBAHKAN SCRIPT INI --}}
-    <script>
-        function closePrintModal() {
-            var modal = document.getElementById('printConfirmModal');
-            if (modal) {
-                modal.remove();
-            }
-        }
-
-        function doPrint() {
-            window.print();
-            closePrintModal();
-        }
-    </script>
-    @endif
 @endsection

@@ -10,6 +10,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\CapitalController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\ComplianceController;
+use App\Http\Controllers\ComplianceCheckController;
 use App\Http\Controllers\AccountingController;
 use App\Http\Controllers\InternalMutationController; 
 use App\Http\Controllers\ClosingController;
@@ -22,7 +23,7 @@ use Illuminate\Support\Facades\Auth;
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes - FINAL FIXED v3 (Closing Route Fix)
+| Web Routes - FINAL FIXED v3 (Closing Route Fix & APU-PPT Fix)
 |--------------------------------------------------------------------------
 */
 
@@ -90,6 +91,15 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/internal-mutation/{id}', [InternalMutationController::class, 'destroy'])->name('internal-mutation.destroy');
 
     // ====================================================
+    // PERBAIKAN: MODUL PENGECEKAN THRESHOLD APU-PPT
+    // Dipindah ke area publik (bawah Internal Mutation) agar Kasir bisa mengaksesnya
+    // ====================================================
+    Route::prefix('compliance-check')->name('compliance.check.')->group(function () {
+        Route::get('/threshold/{customerId}', [ComplianceCheckController::class, 'checkCustomerThreshold'])->name('threshold');
+        Route::get('/ltkt-warning', [ComplianceCheckController::class, 'showLtktWarningPage'])->name('ltkt.warning');
+    });
+
+    // ====================================================
     // 5. AREA KHUSUS ADMIN & OWNER
     // ====================================================
     Route::middleware([CheckRole::class.':admin,owner'])->group(function() {
@@ -134,8 +144,6 @@ Route::middleware(['auth'])->group(function () {
         });
 
         // MODULE: AKUNTANSI
-        // Prefix URL: /admin/accounting/...
-        // Prefix Name: accounting....
         Route::prefix('admin/accounting')->name('accounting.')->group(function() {
             
             // 1. COA
@@ -156,8 +164,7 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/journals', [JournalController::class, 'store'])->name('journals.store');
             Route::delete('/journals/{id}', [JournalController::class, 'destroy'])->name('journals.destroy');
 
-            // 4. TUTUP BUKU (CLOSING) - [PERBAIKAN LOKASI DISINI]
-            // Nama Route hasil gabungan: accounting.closing.index
+            // 4. TUTUP BUKU (CLOSING)
             Route::get('/closing', [ClosingController::class, 'index'])->name('closing.index');
             Route::post('/closing', [ClosingController::class, 'process'])->name('closing.process');
         });
@@ -175,7 +182,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/buku-besar', [LedgerController::class, 'index'])->name('buku_besar');
         });
 
-        // MODULE: APU-PPT
+        // MODULE: APU-PPT (MANAJEMEN OLEH ADMIN)
         Route::prefix('admin/compliance')->name('compliance.')->group(function() {
             Route::get('/dttot', [ComplianceController::class, 'dttotIndex'])->name('dttot.index');
             Route::post('/dttot/import', [ComplianceController::class, 'dttotStore'])->name('dttot.import');
@@ -186,7 +193,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/ltkm', [ComplianceController::class, 'ltkmIndex'])->name('ltkm.index');
             Route::post('/ltkm/store', [ComplianceController::class, 'ltkmStore'])->name('ltkm.store');
         });
-    });
+    }); // <-- PENUTUP AREA ADMIN/OWNER
 
     // ====================================================
     // 6. AREA KHUSUS KASIR
@@ -208,6 +215,4 @@ Route::middleware(['auth'])->group(function () {
         });
         
     });
-        // Khusus upate jurnal dan buku besar jika ada error
-    // Route::get('/fix-jurnal', [JournalController::class, 'syncTransactionsToJournal']);
 });

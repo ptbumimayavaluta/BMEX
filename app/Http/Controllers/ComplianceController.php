@@ -3,14 +3,11 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-// --- IMPORT MODEL ---
 use App\Models\Transaction;
 use App\Models\DttotList;
 use App\Models\SuspiciousReport;
-// --- IMPORT FACADES ---
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB; 
-// --- IMPORT LIBRARY PDF ---
 use Smalot\PdfParser\Parser;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
@@ -36,8 +33,6 @@ class ComplianceController extends Controller
 
         // Pagination 50 data per halaman agar ringan
         $lists = $query->orderBy('created_at', 'desc')->paginate(50);
-        
-        // Penting: Append query string agar saat pindah halaman search tidak hilang
         $lists->appends(['search' => $request->search]);
 
         return view('admin.compliance.dttot', compact('lists'));
@@ -89,7 +84,7 @@ class ComplianceController extends Controller
                 ];
             }
 
-            // Bulk insert batch 100 data agar sangat cepat
+            // Bulk insert batch 100 data agar eksekusi SQL lebih cepat
             foreach (array_chunk($insertData, 100) as $chunk) {
                 DttotList::insert($chunk);
             }
@@ -140,14 +135,13 @@ class ComplianceController extends Controller
                         ->get();
 
         // B. Akumulasi Harian > 100 Juta (Structuring)
-        // Group by NIK + Nama + Tanggal
         $dailyAccumulation = Transaction::select(
                                 'customer_name', 
                                 'customer_identity_no', 
                                 DB::raw('DATE(created_at) as trx_date'), 
                                 DB::raw('SUM(total_idr) as total_daily'),
                                 DB::raw('COUNT(*) as freq'),
-                                DB::raw('MAX(branch_id) as branch_id') // Ambil salah satu cabang
+                                DB::raw('MAX(branch_id) as branch_id')
                             )
                             ->whereMonth('created_at', $month)
                             ->whereYear('created_at', $year)
@@ -168,7 +162,7 @@ class ComplianceController extends Controller
                             ->whereYear('created_at', $year)
                             ->groupBy('customer_identity_no', 'customer_name')
                             ->orderBy('total_volume', 'desc')
-                            ->limit(10) // Hanya Top 10 agar ringan
+                            ->limit(10)
                             ->get();
 
         return view('admin.compliance.ltkt', compact(
@@ -198,7 +192,7 @@ class ComplianceController extends Controller
             'customer_name' => strtoupper($request->customer_name),
             'identity_no' => $request->identity_no ?? '-',
             'suspicious_reason' => $request->suspicious_reason,
-            'status' => 'PENDING', // Status Awal
+            'status' => 'PENDING',
             'reported_by' => Auth::id()
         ]);
 
