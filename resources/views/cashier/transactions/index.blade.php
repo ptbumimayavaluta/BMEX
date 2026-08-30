@@ -927,6 +927,10 @@
         function checkApuPptThreshold(identityNo) {
             if (!identityNo || identityNo.trim().length < 3) return;
 
+            // Ambil tipe transaksi aktif (buy / sell)
+            let currentType = document.getElementById('globalType').value;
+            if (currentType !== 'sell') return; // Abaikan jika bukan tipe JUAL
+
             let currentTotalAmount = 0;
             document.querySelectorAll('#tableBody tr').forEach(row => {
                 let amountInput = row.querySelector('input[name*="[amount_foreign]"]');
@@ -936,52 +940,26 @@
                 currentTotalAmount += (amount * rate);
             });
 
-            fetch(`/compliance-check/threshold/${encodeURIComponent(identityNo.trim())}?amount=${currentTotalAmount}`)
+            // Kirim parameter type=sell ke backend
+            fetch(`/compliance-check/threshold/${encodeURIComponent(identityNo.trim())}?amount=${currentTotalAmount}&type=${currentType}`)
                 .then(response => response.json())
                 .then(res => {
-                    if (res.status === 'success') {
-                        let data = res.data;
-                        if (data.is_exceeded) {
-                            globalThresholdExceeded = true; // <-- KUNCI STATUS MENJADI TRUE
-                            
-                            Swal.fire({
-                                title: 'ALERT APU-PPT (LTKT)!',
-                                html: `
-                                    <div class="text-left text-xs space-y-2">
-                                        <p class="text-red-600 font-bold text-sm">⚠️ Nasabah melampaui Threshold Kumulatif USD 10.000 (Rp 150.000.000) bulan ini!</p>
-                                        <hr>
-                                        <p>• Nomor Identitas: <b>${data.customer_identity_no}</b></p>
-                                        <p>• Total Transaksi Bulan Ini (DB): <b>Rp ${new Intl.NumberFormat('id-ID').format(data.current_total)}</b></p>
-                                        <p>• Total Setelah Transaksi Ini: <b>Rp ${new Intl.NumberFormat('id-ID').format(data.projected_total)}</b></p>
-                                        <div class="bg-red-50 p-2 rounded text-red-800 font-medium mt-2">
-                                            * Wajib isi Sumber Dana & Tujuan Transaksi sebelum submit!
-                                        </div>
-                                    </div>
-                                `,
-                                icon: 'warning',
-                                confirmButtonText: 'SAYA MENGERTI',
-                                confirmButtonColor: '#DC2626'
-                            });
-                        } else {
-                            globalThresholdExceeded = false; // Reset jika aman
-                            if (data.is_warning) {
-                                Swal.fire({
-                                    title: 'PERINGATAN AKUMULASI APU-PPT',
-                                    html: `
-                                        <div class="text-left text-xs">
-                                            <p>Akumulasi transaksi nasabah bulan ini hampir mencapai threshold USD 10.000.</p>
-                                            <p class="mt-1">• Total Akumulasi (DB): <b>Rp ${new Intl.NumberFormat('id-ID').format(data.current_total)}</b></p>
-                                            <p>• Sisa Limit Aman: <b>Rp ${new Intl.NumberFormat('id-ID').format(data.remaining_limit)}</b></p>
-                                        </div>
-                                    `,
-                                    icon: 'info',
-                                    confirmButtonColor: '#F59E0B'
-                                });
-                            }
-                        }
+                    if (res.status === 'success' && res.data.is_exceeded) {
+                        Swal.fire({
+                            title: 'ALERT APU-PPT (LTKT)!',
+                            html: `
+                                <div class="text-left text-xs space-y-2">
+                                    <p class="text-red-600 font-bold text-sm">⚠️ Nasabah melampaui Threshold Kumulatif USD 10.000 (Rp ${new Intl.NumberFormat('id-ID').format(res.data.dynamic_limit)}) bulan ini!</p>
+                                    <hr>
+                                    <p>• Total Setelah Transaksi Ini: <b>Rp ${new Intl.NumberFormat('id-ID').format(res.data.projected_total)}</b></p>
+                                </div>
+                            `,
+                            icon: 'warning',
+                            confirmButtonText: 'SAYA MENGERTI',
+                            confirmButtonColor: '#DC2626'
+                        });
                     }
-                })
-                .catch(err => console.error('[APU-PPT] Error AJAX:', err));
+                });
         }
 
         // Init Single Listener
@@ -1034,7 +1012,8 @@
                         let idInput = document.querySelector('input[name="customer_identity_no"]');
                         let idNo = idInput ? idInput.value.trim() : '';
 
-                        if (idNo.length >= 3) {
+                        let currentType = document.getElementById('globalType').value;
+                        if (idNo.length >= 3 && currentType === 'sell') {
                             // Tampilkan loading dengan teks profesional
                             Swal.fire({
                                 title: 'Memproses Transaksi...',
@@ -1048,7 +1027,7 @@
                             // Berikan jeda waktu minimum 1.5 detik (1500 ms) agar animasi loading sempat terlihat nyaman oleh kasir
                             await new Promise(resolve => setTimeout(resolve, 1500));
 
-                            let fetchUrl = `{{ url('/compliance-check/threshold') }}/${encodeURIComponent(idNo)}?amount=${currentTotalAmount}`;
+                            let fetchUrl = `{{ url('/compliance-check/threshold') }}/${encodeURIComponent(idNo)}?amount=${currentTotalAmount}&type=${currentType}`;
                             let response = await fetch(fetchUrl);
                             
                             if (response.ok) {

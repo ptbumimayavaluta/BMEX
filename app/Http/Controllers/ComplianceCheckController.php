@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Services\ComplianceService;
 use App\Models\Transaction; 
 use Carbon\Carbon;          
+use Illuminate\Support\Facades\DB;
 
 class ComplianceCheckController extends Controller
 {
@@ -17,25 +18,29 @@ class ComplianceCheckController extends Controller
     }
 
     /**
-     * Endpoint API untuk mengecek limit threshold nasabah secara real-time
+     * Endpoint API untuk mengecek limit threshold nasabah secara real-time[cite: 6]
      */
     public function checkCustomerThreshold(Request $request, $customerId)
     {
         $currentAmount = (float) $request->get('amount', 0);
+        $transactionType = $request->get('type', 'sell'); 
         
-        // Membatasi pencarian hanya dari tanggal 1 sampai akhir bulan ini
         $startOfMonth = Carbon::now()->startOfMonth();
         $endOfMonth = Carbon::now()->endOfMonth();
 
-        // Pencarian super cepat menggunakan Index database
+        // [PERBAIKAN] Akumulasi historis khusus untuk transaksi JUAL (sell) saja
+        // agar transaksi saat nasabah menjual ke kita (buy) tidak ikut menjerat limit pembelian mereka
         $historicalTotal = Transaction::where('customer_identity_no', $customerId)
+            ->where('type', 'sell') // <-- HANYA MENGHITUNG RIWAYAT PENJUALAN KITA KE NASABAH
             ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
             ->sum('total_idr');
 
         $projectedTotal = $historicalTotal + $currentAmount;
         
-        // Limit Threshold APU-PPT (Rp 150.000.000 / USD 10.000)
-        $limitThreshold = 150000000;
+        $usdRate = DB::table('settings')->where('key', 'threshold_usd_rate')->value('value') ?? 15000;
+        $limitThreshold = 10000 * (float) $usdRate;
+
+        $isExceeded = ($transactionType === 'sell') ? ($projectedTotal >= $limitThreshold) : false;
 
         return response()->json([
             'status' => 'success',
@@ -43,15 +48,16 @@ class ComplianceCheckController extends Controller
                 'customer_identity_no' => $customerId,
                 'current_total'        => (float) $historicalTotal,
                 'projected_total'      => (float) $projectedTotal,
-                'is_exceeded'          => $projectedTotal >= $limitThreshold,
-                'is_warning'           => $projectedTotal >= ($limitThreshold * 0.8) && $projectedTotal < $limitThreshold,
+                'is_exceeded'          => $isExceeded,
+                'is_warning'           => ($transactionType === 'sell') ? ($projectedTotal >= ($limitThreshold * 0.8) && $projectedTotal < $limitThreshold) : false,
                 'remaining_limit'      => max(0, $limitThreshold - $historicalTotal),
+                'dynamic_limit'        => (float) $limitThreshold,
             ]
         ]);
     }
 
     /**
-     * Halaman Khusus Verifikasi LTKT
+     * Halaman Khusus Verifikasi LTKT[cite: 6]
      */
     public function showLtktWarningPage(Request $request)
     {
