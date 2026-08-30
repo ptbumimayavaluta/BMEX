@@ -88,62 +88,42 @@
         </div>
     </div>
 
-    <!-- Modal Notifikasi Sesi Habis -->
-<div id="session-timeout-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.65); z-index: 99999; justify-content: center; align-items: center; backdrop-filter: blur(2px);">
-    <div style="background: #ffffff; padding: 30px; border-radius: 12px; text-align: center; max-width: 420px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.2); font-family: sans-serif;">
-        <div style="font-size: 48px; margin-bottom: 10px;">⏰</div>
-        <h4 style="margin: 0 0 10px 0; color: #333; font-weight: 600;">Sesi Anda telah Habis</h4>
-        <p style="color: #666; font-size: 14px; line-height: 1.5; margin-bottom: 20px;">
-            Anda telah tidak aktif dalam beberapa waktu. Demi keamanan data keuangan, silakan login kembali.
-        </p>
-        <a href="{{ route('login') }}" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 12px 24px; font-size: 14px; font-weight: 600; border-radius: 6px; cursor: pointer; transition: background 0.2s;">
-            Login Ulang Sekarang
-        </a>
-    </div>
-</div>
+    {{-- Form Logout Tersembunyi untuk Eksekusi Resmi ke Backend --}}
+    <form id="idle-logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+        @csrf
+    </form>
 
+    {{-- Script Smart Idle 60 Menit --}}
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            // Cek sesi setiap 60 detik (1 menit)
-            const checkInterval = 60000; 
+        document.addEventListener("DOMContentLoaded", function () {
+            // Durasi Idle: 60 Menit (60 * 60 * 1000 milidetik)
+            const IDLE_TIMEOUT = 60 * 60 * 1000; 
+            let idleTimer;
 
-            setInterval(function() {
-                fetch("{{ route('check.session') }}", {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json'
-                    }
-                })
-                .then(response => {
-                    // Jika status 401 (Unauthorized), 419 (Page Expired), atau bukan HTTP 200 OK
-                    if (response.status === 401 || response.status === 419 || !response.ok) {
-                        showSessionExpiredModal();
-                        return null;
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data && data.auth === false) {
-                        showSessionExpiredModal();
-                    }
-                })
-                .catch(error => {
-                    // Jika koneksi terputus atau gagal membaca respon
-                    showSessionExpiredModal();
-                });
-            }, checkInterval);
-
-            function showSessionExpiredModal() {
-                const modal = document.getElementById('session-timeout-modal');
-                if (modal && modal.style.display !== 'flex') {
-                    modal.style.display = 'flex';
-
-                    // Otomatis arahkan ke halaman login dalam 3 detik
-                    setTimeout(function() {
-                        window.location.href = "{{ route('login') }}";
-                    }, 3000);
+            // Eksekusi logout resmi ke backend server jika diam 60 menit
+            function executeAutoLogout() {
+                const logoutForm = document.getElementById('idle-logout-form');
+                if (logoutForm) {
+                    logoutForm.submit();
+                } else {
+                    window.location.href = "{{ route('login') }}";
                 }
             }
+
+            // Reset hitungan timer setiap kali kasir beraktivitas
+            function resetIdleTimer() {
+                clearTimeout(idleTimer);
+                idleTimer = setTimeout(executeAutoLogout, IDLE_TIMEOUT);
+            }
+
+            // Pantau aktivitas fisik kasir (Gerak mouse, ketik keyboard, klik, scroll, touch)
+            const userEvents = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+            userEvents.forEach(eventType => {
+                window.addEventListener(eventType, resetIdleTimer, true);
+            });
+
+            // Jalankan timer pertama kali saat halaman dimuat
+            resetIdleTimer();
         });
     </script>
     

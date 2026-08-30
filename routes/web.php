@@ -55,11 +55,6 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // --- B. FITUR BERSAMA ---
-
-    // Add-on: Check Session Timeout Status
-    Route::get('/check-session', function () {
-        return response()->json(['auth' => Auth::check()]);
-    })->name('check.session');
     
     // 1. Data Nasabah
     Route::get('/nasabah/data', [MenuController::class, 'nasabah'])->name('nasabah.index');
